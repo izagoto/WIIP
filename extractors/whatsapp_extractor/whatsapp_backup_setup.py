@@ -85,13 +85,6 @@ class WhatsAppAutomation:
             logging.error(f"[ERROR] Gagal mengecek status layar: {e}")
             return False
 
-    def swipe_up(self):
-        try:
-            subprocess.run(["adb", "shell", "input", "swipe", "500", "1800", "500", "300"], check=True)
-            logging.info("[INFO] Swipe berhasil dijalankan.")
-        except subprocess.CalledProcessError as e:
-            logging.error(f"[ERROR] Gagal melakukan swipe: {e}")
-
     def wake_and_swipe(self):
         try:
             if self.is_screen_on():
