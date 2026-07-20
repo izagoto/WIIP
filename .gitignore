@@ -1,0 +1,36 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Project specific data / extracted files
+extractors/whatsapp_extractor/pull/
+extractors/whatsapp_extractor/db_whatsapp/
+extractors/whatsapp_extractor/db_backup/
+data/
+export/
+
+# Log files
+*.log
+
+# Unit test / coverage reports
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/

@@ -1,0 +1,5 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "extraPaths": ["extractors/whatsapp_extractor", "backend", "worker"]
+}

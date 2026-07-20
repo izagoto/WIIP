@@ -1,0 +1,80 @@
+====================================================================
+WIIP (WhatsApp Investigation Intelligence Platform) - Task Roadmap
+====================================================================
+Berdasarkan dokumen arsitektur dan persyaratan sistem WIIP, berikut
+adalah langkah-langkah implementasi (Task List) yang disusun secara
+terstruktur dari level terbawah (Data) hingga teratas (Workspace).
+
+--------------------------------------------------------------------
+PHASE 1: SYSTEM FOUNDATION & EVIDENCE PROCESSING LAYER
+--------------------------------------------------------------------
+[x] Task 1.1: Setup Evidence Sources & Storage
+    - Konfigurasi penyimpanan raw evidence (data/raw_evidence).
+    - Setup Chain of Custody & mekanisme Audit Trail.
+[x] Task 1.2: Implementasi Metadata Extractor & Hash Verification
+    - Buat script untuk verifikasi Hash (SHA256/MD5) pada setiap file.
+    - Ekstraksi metadata file media (EXIF, ukuran, timestamp).
+[ ] Task 1.3: Setup API Dasar (Case Management & Evidence Upload)
+    - Buat API Endpoint untuk Create/List Cases.
+    - Buat API Endpoint untuk Evidence Ingestion & integrasikan ke service (Task 1.1).
+[ ] Task 1.4: Integrasi WhatsApp Extractor ke Worker
+    - Pindahkan proses dekripsi (crypt15) dan parsing SQLite ke Celery tasks.
+    - Implementasi Duplicate Evidence Detection saat proses impor.
+[ ] Task 1.5: Evidence Indexer
+    - Setup indexing engine (misal: Elasticsearch / Postgres TSV) untuk pencarian cepat.
+
+--------------------------------------------------------------------
+PHASE 2: DATA NORMALIZATION LAYER
+--------------------------------------------------------------------
+[ ] Task 2.1: Desain Skema Database Terpadu (Unified Data Model)
+    - Buat tabel/skema untuk: People, Chats, Groups, Media, Locations, Events, Devices.
+[ ] Task 2.2: Implementasi Data Mapper / Standardizer
+    - Buat skrip untuk memetakan data raw WhatsApp menjadi format standar (Unified Data Model).
+    - Penanganan timestamp consistency (konversi UTC / zona waktu).
+
+--------------------------------------------------------------------
+PHASE 3: CORE INTELLIGENCE ENGINES
+--------------------------------------------------------------------
+[ ] Task 3.1: Correlation Engine
+    - Multi-Database Correlation (Penyatuan data dari >1 DB).
+    - Shared Finder (Contact, Group, Media, Location, Link).
+    - Common Evidence Finder & Message Comparison.
+[ ] Task 3.2: Behavior Engine
+    - Communication Pattern Analysis (Daily/Weekly pattern, Peak hours).
+    - Behavior Change Detection (Burst detection, Silent period, Sudden drops).
+    - Behavior Scoring (Activity Score, Interaction Score).
+[ ] Task 3.3: Timeline Engine
+    - Unified Timeline Builder (mengurutkan Messages, Calls, Media, dll secara kronologis).
+    - Historical Snapshot & Timeline Comparison.
+    - Story Chain generation (merangkai pesan terkait, reply, quote).
+[ ] Task 3.4: Graph Engine
+    - Relationship Graph Builder (Nodes & Edges).
+    - Community Detection & Hidden Circle Detection.
+    - Bridge Person Detection & Communication Matrix.
+
+--------------------------------------------------------------------
+PHASE 4: PRODUCT MODULES (API & LOGIC)
+--------------------------------------------------------------------
+[ ] Task 4.1: Case Management Module
+    - API untuk Case Dashboard, Investigator Assignment, Case Status.
+[ ] Task 4.2: People Intelligence Module
+    - API untuk Contact Profile, Aliases, Favorite Contacts/Groups.
+[ ] Task 4.3: Conversation Intelligence Module
+    - API untuk Chat Explorer, Keyword Search, Conversation Statistics.
+[ ] Task 4.4: Media & Location Intelligence Module
+    - API untuk Media Browser, Shared Media, OCR integration.
+    - API untuk Map View, Meeting Point Detection, Route History.
+
+--------------------------------------------------------------------
+PHASE 5: INVESTIGATION WORKSPACE & REPORTING (KILLER FEATURES)
+--------------------------------------------------------------------
+[ ] Task 5.1: Live Correlation Board
+    - Sinkronisasi event-driven (Websockets/SSE) agar Workspace update otomatis tanpa manual re-analysis.
+[ ] Task 5.2: Investigation Gap Analyzer & Cross-Case Correlation
+    - Deteksi missing witness device / timeline gaps.
+    - Deteksi entitas berulang (Recurring phone numbers, hashes) di kasus-kasus sebelumnya.
+[ ] Task 5.3: Case Replay Feature
+    - Sistem playback investigasi secara berurutan berdasarkan kronologi.
+[ ] Task 5.4: Court-Ready Reporting Engine
+    - Implementasi export laporan (Executive Summary, Timeline, Graph) ke PDF, HTML, Excel, JSON.
+    - Sertakan Evidence Confidence Engine (Strength, Database Reference) dalam laporan.
