@@ -13,9 +13,10 @@ Setiap pesan, individu, file media, lokasi, stempel waktu (*timestamp*), perangk
 ## 🛠️ Library & Tools
 
 Proyek ini dibangun menggunakan kumpulan *tools* dan *library* berikut:
-- **Python 3.8+**: Bahasa pemrograman utama.
-- **uiautomator2**: Library Python untuk otomatisasi UI Android (mengeklik layar, *swipe*, dsb).
-- **ADB (Android Debug Bridge)**: Tool command-line untuk berkomunikasi dengan perangkat Android.
+- **[Python 3.8+](https://www.python.org/downloads/)**: Bahasa pemrograman utama.
+- **[uiautomator2](https://github.com/openatx/uiautomator2)**: Library Python untuk otomatisasi UI Android (mengeklik layar, *swipe*, dsb).
+- **[WEditor](https://github.com/alibaba/web-editor)**: Tool wajib bagi pengembang untuk menginspeksi UI (*UI Inspector*) guna mendapatkan `resource-id` atau `xpath` di layar Android.
+- **[ADB (Android Debug Bridge)](https://developer.android.com/studio/command-line/adb)**: Tool command-line untuk berkomunikasi dengan perangkat Android.
 - **SQLite3**: Untuk pemrosesan dan ekstraksi data dari database `.db`.
 
 ---
@@ -43,18 +44,26 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-### 3. Instalasi Dependencies
-Instal semua *library* Python yang dibutuhkan:
+### 3. Instalasi Dependencies & Tools Tambahan
+Instal semua *library* Python yang dibutuhkan, termasuk `uiautomator2` dan `weditor`:
 ```bash
+# Instal UI Automator 2
 pip install uiautomator2
+
+# Instal WEditor (Untuk inspeksi elemen UI layar Android)
+pip install weditor
 
 # Jika backend API digunakan, jalankan juga:
 pip install -r backend/requirements.txt
 ```
+*(Catatan: Setelah menginstal weditor, Anda bisa menjalankannya di terminal dengan perintah `python -m weditor` atau `weditor` untuk membuka antarmuka UI inspector di browser).*
 
 ### 4. Instalasi & Setup ADB
-Skrip ini wajib menggunakan ADB agar bisa mengontrol HP Android.
-- **Windows**: Unduh [SDK Platform-Tools](https://developer.android.com/studio/releases/platform-tools), ekstrak, dan tambahkan folder tersebut ke `Environment Variables (PATH)`.
+Skrip ini wajib menggunakan ADB agar bisa mengontrol HP Android. Anda bisa mengunduh ADB resmi langsung dari Google:
+- **Windows / Mac / Linux (Resmi)**: [Unduh SDK Platform-Tools](https://developer.android.com/studio/releases/platform-tools)
+- **Instruksi Ekstrak Windows**: Setelah diunduh, ekstrak folder tersebut dan [tambahkan ke Environment Variables (PATH) komputer Anda](https://www.xda-developers.com/install-adb-windows-macos-linux/#how-to-set-up-adb-on-windows).
+
+**Alternatif Instalasi Instan:**
 - **Mac (Homebrew)**: `brew install android-platform-tools`
 - **Linux (Ubuntu/Debian)**: `sudo apt-get install android-tools-adb`
 
