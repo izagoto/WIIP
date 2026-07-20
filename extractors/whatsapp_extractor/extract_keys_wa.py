@@ -91,10 +91,10 @@ class WhatsappTools:
                 else:
                     remote_db = found_files[0]
     
-                adb_command = f"adb pull '{remote_db}' '{self.database_file}'"
+                adb_command = ["adb", "pull", remote_db, self.database_file]
                 
                 logging.info(f"[INFO] Mengunduh file database WhatsApp ({remote_db})...")
-                result = subprocess.run(adb_command, shell=True, capture_output=True, text=True)
+                result = subprocess.run(adb_command, capture_output=True, text=True)
     
                 if result.returncode == 0:
                     logging.info("[SUCCESS] File database berhasil diunduh!")
@@ -120,9 +120,9 @@ class WhatsappTools:
                 else:
                     remote_wa_db = found_wa_files[0]
                 
-                adb_wa_command = f"adb pull '{remote_wa_db}' '{self.wa_database_file}'"
+                adb_wa_command = ["adb", "pull", remote_wa_db, self.wa_database_file]
                 logging.info(f"[INFO] Mengunduh file database WhatsApp contacts ({remote_wa_db})...")
-                result_wa = subprocess.run(adb_wa_command, shell=True, capture_output=True, text=True)
+                result_wa = subprocess.run(adb_wa_command, capture_output=True, text=True)
                 if result_wa.returncode == 0:
                     logging.info("[SUCCESS] File database contacts berhasil diunduh!")
                 else:
