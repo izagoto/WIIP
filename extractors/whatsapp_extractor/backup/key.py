@@ -1,7 +1,7 @@
 import hmac
 from hashlib import sha256
 import javaobj.v2 as javaobj
-from utils import from_hex, javaintlist2bytes
+from .utils import from_hex, javaintlist2bytes
 
 
 class Key:
@@ -40,7 +40,7 @@ class Key:
         try:
             key_file_stream = open(key_file_name, "rb")
             try:
-                jarr = javaobj.load(key_file_stream).data
+                jarr = javaobj.load(key_file_stream).data  # type: ignore
                 hexkey = javaintlist2bytes(jarr)
             except (ValueError, RuntimeError) as e:
                 logger.f(f"The hexkey is not a valid Java object: {e}")
@@ -49,7 +49,7 @@ class Key:
             hexkey = from_hex(logger, key_file_name)
 
         if len(hexkey) == 131:
-            self.load_crypt14(logger, hexkey=hexkey)
+            self.load_crypt14(logger, keyfile=hexkey)
         elif len(hexkey) == 32:
             self.load_crypt15(logger, hexkey=hexkey)
         else:

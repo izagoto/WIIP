@@ -1,6 +1,8 @@
 import subprocess
 import os
 
+from paths import pull_root
+
 
 def check_adb():
     print("-" * 48)
@@ -25,7 +27,7 @@ def run_adb_commands():
         )
 
         # Ensure the local directory exists
-        local_dir = "extractors/whatsapp_extractor/pull/"
+        local_dir = pull_root("manual")
         if not os.path.exists(local_dir):
             os.makedirs(local_dir)
             print(f"Created directory: {local_dir}")

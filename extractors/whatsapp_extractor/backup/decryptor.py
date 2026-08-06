@@ -4,7 +4,7 @@ from Cryptodome.Cipher import AES
 from google.protobuf.message import DecodeError
 import io
 
-from utils import test_decompression, oscillate, HEADER_SIZE
+from .utils import test_decompression, oscillate, HEADER_SIZE
 
 
 def decrypt(logger, file_hash, cipher, encrypted, decrypted, buffer_size: int = 0):
@@ -41,7 +41,7 @@ def decrypt(logger, file_hash, cipher, encrypted, decrypted, buffer_size: int = 
 
                 try:
                     if is_multifile_backup:
-                        output_decrypted += cipher.decrypt(authentication_tag)
+                        output_decrypted += cipher.decrypt(authentication_tag)  # type: ignore
                         cipher.verify(checksum)
                     else:
                         cipher.verify(authentication_tag)
@@ -49,11 +49,11 @@ def decrypt(logger, file_hash, cipher, encrypted, decrypted, buffer_size: int = 
                     logger.e(f"Tag mismatch: {e}. Backup corrupted.")
 
                 try:
-                    output_file = z_obj.decompress(output_decrypted)
+                    output_file = z_obj.decompress(output_decrypted)  # type: ignore
                     if not z_obj.eof:
                         logger.e("Database truncated.")
                 except zlib.error:
-                    output_file = output_decrypted
+                    output_file = output_decrypted  # type: ignore
 
                     if test_decompression(logger, output_file[: io.DEFAULT_BUFFER_SIZE]):
                         logger.i("Decrypted data is ZIP. Not decompressing.")
@@ -78,7 +78,7 @@ def decrypt(logger, file_hash, cipher, encrypted, decrypted, buffer_size: int = 
                         chunk = encrypted.read(buffer_size)
                     except MemoryError:
                         logger.f("Out of RAM. Use smaller buffer size.")
-                    if len(chunk) < buffer_size:
+                    if len(chunk) < buffer_size:  # type: ignore
                         logger.f("Buffer size too large. Use smaller buffer.")
                     continue
                 try:
@@ -86,15 +86,19 @@ def decrypt(logger, file_hash, cipher, encrypted, decrypted, buffer_size: int = 
                 except MemoryError:
                     logger.f("Out of RAM. Use smaller buffer size.")
 
-                if len(next_chunk) <= 36:
-                    if len(next_chunk) == 36:
+                if next_chunk is None:
+                    continue
+
+                next_chunk_len = len(next_chunk)
+                if next_chunk_len <= 36:
+                    if next_chunk_len == 36:
                         checksum = next_chunk
-                    elif len(next_chunk) == 0:
+                    elif next_chunk_len == 0:
                         checksum = chunk[-36:]
                         chunk = chunk[:-36]
                     else:
-                        checksum = chunk[-(36 - len(next_chunk)) :] + next_chunk  # noqa
-                        chunk = chunk[: -(36 - len(next_chunk))]
+                        checksum = chunk[-(36 - next_chunk_len) :] + next_chunk
+                        chunk = chunk[: -(36 - next_chunk_len)]
 
                 file_hash.update(chunk)
                 decrypted_chunk = cipher.decrypt(chunk)
@@ -176,7 +180,7 @@ def parse_protobuf(logger, file_hash, key, encrypted):
         logger.e(f"Proto classes error: {e}. Update protobuf to 3.20.0+.")
         return None
 
-    p = prefix.prefix()
+    p = prefix.prefix()  # type: ignore
     logger.v("Parsing header...")
 
     try:
@@ -290,7 +294,7 @@ def guess_offsets(logger, key, file_hash, encrypted, def_iv_offset, def_data_off
                 logger.i(f"Next time, use -ivo {iv_offset} -do {data_offset} for guess-free decryption")
             break
 
-    if data_offset == -1:
+    if data_offset is None or data_offset == -1 or iv_offset is None or db_header is None:
         return None
 
     iv = db_header[iv_offset : iv_offset + 16]  # noqa

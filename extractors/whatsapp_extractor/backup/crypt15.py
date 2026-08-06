@@ -1,9 +1,9 @@
 import io
 from hashlib import md5
-from logger import Log
-from key import Key
-from decryptor import decrypt, parse_protobuf, guess_offsets
-from utils import parsecmdline, HEADER_SIZE
+from .logger import Log
+from .key import Key
+from .decryptor import decrypt, parse_protobuf, guess_offsets
+from .utils import parsecmdline, HEADER_SIZE
 
 
 def main():

@@ -1,94 +1,153 @@
-# WIIP (WhatsApp Intelligence & Investigation Platform)
+# Evidentra Digital Forensics & Intelligence Platform
 
-WIIP adalah sebuah *Platform* Intelijen Investigasi yang mengubah bukti digital yang terfragmentasi (terpisah-pisah) menjadi sebuah ekosistem investigasi yang saling terhubung.
+Platform perangkat lunak forensik digital terintegrasi untuk operasi penegakan hukum, dikembangkan sebagai bagian dari proyek **Digifor Brimob**.
 
-Alat forensik digital saat ini memang sangat efektif untuk mengekstrak barang bukti dari perangkat seluler. Namun, para investigator (penyidik) masih harus menghabiskan banyak waktu secara manual untuk mengkorelasikan percakapan, merekonstruksi linimasa (*timeline*), mengidentifikasi hubungan, dan memahami konteks di balik sebuah insiden.
+## Tentang Proyek
 
-Setiap pesan, individu, file media, lokasi, stempel waktu (*timestamp*), perangkat, dan peristiwa komunikasi akan diubah menjadi bagian dari satu grafik investigasi tunggal. Hal ini memungkinkan para penyidik untuk tidak hanya memahami "apa yang terjadi", tetapi juga melihat secara jelas bagaimana setiap kepingan bukti saling terhubung satu sama lain.
+Evidentra adalah platform terpusat yang menyediakan modul akuisisi data, WhatsApp Intelligence, manajemen kasus penyidikan, manajemen barang bukti digital, dan analisis kecerdasan strategis. Platform ini dirancang untuk mendukung kegiatan forensik digital di lapangan maupun di pusat.
 
-**Tagline**: *Melampaui Forensik WhatsApp Biasa. Dibangun Khusus untuk Intelijen Investigasi.*
+## Struktur Proyek
 
----
-
-## 🛠️ Library & Tools
-
-Proyek ini dibangun menggunakan kumpulan *tools* dan *library* berikut:
-- **[Python 3.8+](https://www.python.org/downloads/)**: Bahasa pemrograman utama.
-- **[uiautomator2](https://github.com/openatx/uiautomator2)**: Library Python untuk otomatisasi UI Android (mengeklik layar, *swipe*, dsb).
-- **[WEditor](https://github.com/alibaba/web-editor)**: Tool wajib bagi pengembang untuk menginspeksi UI (*UI Inspector*) guna mendapatkan `resource-id` atau `xpath` di layar Android.
-- **[ADB (Android Debug Bridge)](https://developer.android.com/studio/command-line/adb)**: Tool command-line untuk berkomunikasi dengan perangkat Android.
-- **SQLite3**: Untuk pemrosesan dan ekstraksi data dari database `.db`.
-
----
-
-## ⚙️ Instalasi
-
-Ikuti langkah-langkah di bawah ini untuk menyiapkan *environment* proyek WIIP di komputer Anda.
-
-### 1. Git Clone
-Unduh proyek ini ke komputer lokal Anda:
-```bash
-git clone <URL_REPOSITORY_ANDA>
-cd WIIP
+```
+brimob_forensiq/
+├── backend/                    # FastAPI backend application (Backend Engineer)
+│   ├── main.py                 # FastAPI app entry point
+│   ├── api/                    # API routes & endpoints (v1)
+│   │   ├── v1/
+│   │   │   ├── auth.py
+│   │   │   ├── whatsapp.py
+│   │   │   ├── cases.py
+│   │   │   ├── tasks.py
+│   │   │   ├── evidence.py
+│   │   │   ├── intelligence.py
+│   │   │   └── dashboard.py
+│   │   └── deps.py
+│   ├── models/                 # SQLAlchemy ORM models
+│   ├── schemas/                # Pydantic request/response schemas
+│   ├── services/               # Business logic services
+│   ├── core/                   # Shared utilities (config, DB, auth, logging)
+│   ├── middleware/             # FastAPI middleware (auth, RBAC, audit)
+│   └── modules/                # Domain-specific business logic
+│       ├── d5_whatsapp/
+│       ├── d6_operations/
+│       ├── d7_evidence/
+│       └── d8_intelligence/
+├── worker/                     # Celery background workers (Backend Engineer)
+│   ├── celery_app.py
+│   └── tasks/
+├── ml/                         # ML/AI models & pipelines (ML/AI Specialist)
+│   ├── ner/
+│   ├── graph/
+│   ├── apk/
+│   ├── pipeline/
+│   └── utils/
+├── frontend/                   # React/Vue SPA (Frontend Engineer)
+│   ├── public/
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── hooks/
+│       ├── services/
+│       ├── store/
+│       ├── types/
+│       └── utils/
+├── extractors/                 # Data extraction tools (existing)
+│   └── whatsapp_extractor/
+├── tests/                      # All tests (QA Engineer)
+│   ├── unit/
+│   ├── integration/
+│   ├── e2e/
+│   ├── fixtures/
+│   └── factories/
+├── data/                       # Data files
+│   ├── raw_evidence/
+│   ├── raw_whatsapp_data/
+│   ├── processed/
+│   └── exports/
+├── docs/                       # Documentation
+├── infra/                      # Infrastructure configs (Docker, nginx, alembic)
+├── scripts/                    # Utility & dev scripts
+├── backend/
+├── worker/
+├── ml/
+├── frontend/
+├── tests/
+├── infra/
+├── scripts/
+├── .env.example
+├── .gitignore
+├── pyrightconfig.json
+├── requirements.txt            # Base dependencies (extractors)
+├── requirements-ml.txt         # ML/AI dependencies
+├── requirements-dev.txt        # Dev/testing dependencies
+└── README.md
 ```
 
-### 2. Buat Virtual Environment (Opsional tapi disarankan)
-Agar *library* tidak bentrok dengan *project* Python Anda yang lain:
-```bash
-python -m venv .venv
+## Peran & Direktori
 
-# Aktivasi untuk Mac/Linux:
-source .venv/bin/activate
+| Peran | Direktori Utama |
+|---|---|
+| **Backend Engineer** | `backend/`, `worker/` |
+| **ML/AI Specialist** | `ml/` |
+| **Frontend Engineer** | `frontend/` |
+| **QA Engineer** | `tests/` |
 
-# Aktivasi untuk Windows:
-.venv\Scripts\activate
-```
+## Sub-Modul
 
-### 3. Instalasi Dependencies & Tools Tambahan
-Instal semua *library* Python yang dibutuhkan, termasuk `uiautomator2` dan `weditor`:
-```bash
-# Instal UI Automator 2
-pip install uiautomator2
+| Kode | Modul | Direktori |
+|---|---|---|
+| d.5 | WhatsApp Intelligence | `backend/modules/d5_whatsapp/` |
+| d.6 | Tactical Operations | `backend/modules/d6_operations/` |
+| d.7 | Digital Evidence Management | `backend/modules/d7_evidence/` |
+| d.8 | Strategic Intelligence | `backend/modules/d8_intelligence/` |
 
-# Instal WEditor (Untuk inspeksi elemen UI layar Android)
-pip install weditor
+## Teknologi Utama
 
-# Jika backend API digunakan, jalankan juga:
-pip install -r backend/requirements.txt
-```
-*(Catatan: Setelah menginstal weditor, Anda bisa menjalankannya di terminal dengan perintah `python -m weditor` atau `weditor` untuk membuka antarmuka UI inspector di browser).*
+- **Python 3.11+** — bahasa utama
+- **FastAPI** — web framework untuk REST API
+- **SQLAlchemy 2.0** — ORM
+- **PostgreSQL** — database produksi
+- **Celery + Redis** — background tasks & caching
+- **Protocol Buffers** — serialisasi data WhatsApp crypto
 
-### 4. Instalasi & Setup ADB
-Skrip ini wajib menggunakan ADB agar bisa mengontrol HP Android. Anda bisa mengunduh ADB resmi langsung dari Google:
-- **Windows / Mac / Linux (Resmi)**: [Unduh SDK Platform-Tools](https://developer.android.com/studio/releases/platform-tools)
-- **Instruksi Ekstrak Windows**: Setelah diunduh, ekstrak folder tersebut dan [tambahkan ke Environment Variables (PATH) komputer Anda](https://www.xda-developers.com/install-adb-windows-macos-linux/#how-to-set-up-adb-on-windows).
+## Instalasi
 
-**Alternatif Instalasi Instan:**
-- **Mac (Homebrew)**: `brew install android-platform-tools`
-- **Linux (Ubuntu/Debian)**: `sudo apt-get install android-tools-adb`
+### Prasyarat
 
-**Persiapan di HP Android Anda:**
-1. Masuk ke **Settings** > **About Phone**, ketuk **Build Number** 7x.
-2. Masuk ke **Developer Options** (Opsi Pengembang).
-3. Aktifkan **USB Debugging**.
-4. Colokkan HP ke PC, lalu jalankan `adb devices` di terminal. Pastikan status HP Anda terdeteksi (muncul tulisan `device`).
+- Python 3.11+
+- PostgreSQL 15+
+- Redis 7+
+- Node.js 18+ (untuk frontend)
 
----
-
-## 🚀 Quick Start
-
-Setelah semua terinstal dan HP terhubung dengan PC dalam mode USB Debugging, Anda bisa langsung menjalankan ekstraksi otomatis:
+### Setup Environment
 
 ```bash
-python extractors/whatsapp_extractor/whatsapp_backup_setup.py
+# Backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -r requirements-ml.txt
+pip install -r requirements-dev.txt
+
+# Frontend
+cd frontend
+npm install
 ```
 
-**Alur Otomatisasi (Skrip akan jalan sendiri):**
-1. Skrip akan menutup paksa WhatsApp yang sedang terbuka (agar aman).
-2. Membuka WhatsApp dan masuk ke menu *End-to-End Encryption*.
-3. Jika *key* belum ada, skrip akan mengaktifkannya dan menyimpan *key* tersebut ke `extractors/whatsapp_extractor/pull/<serial_number>_key.txt`.
-4. Skrip akan menekan tombol **Backup Now** dan menunggu hingga selesai.
-5. Secara otomatis menarik (*pull*) `msgstore.db.crypt15` dan `wa.db.crypt15` ke PC.
-6. Mendekripsi file tersebut menjadi *database* mentah SQLite yang bisa langsung Anda baca, disimpan di:
-   `extractors/whatsapp_extractor/db_whatsapp/<serial_number>/`
-7. Terakhir, skrip akan membersihkan layar HP Anda (*Recent Apps*).
+### Menjalankan
+
+```bash
+# Backend
+uvicorn backend.main:app --reload
+
+# Worker (Celery)
+celery -A worker.celery_app worker --loglevel=info
+
+# Frontend
+cd frontend
+npm run dev
+```
+
+## Lisensi
+
+Proyek ini bersifat internal dan untuk kepentingan operasional Brimob.

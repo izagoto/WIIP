@@ -166,6 +166,7 @@ def parsecmdline() -> argparse.Namespace:
     parser.add_argument("-nm", "--no-mem", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("-bs", "--buffer-size", type=int, help=argparse.SUPPRESS)
     parser.add_argument("-np", "--no-protobuf", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("-ng", "--no-guess", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("-ivo", "--iv-offset", type=int, default=DEFAULT_IV_OFFSET, help=argparse.SUPPRESS)
     parser.add_argument("-do", "--data-offset", type=int, default=DEFAULT_DATA_OFFSET, help=argparse.SUPPRESS)
     parser.add_argument("-v", "--verbose", action="store_true", help=argparse.SUPPRESS)
@@ -294,7 +295,7 @@ def decrypt(logger, file_hash, cipher, encrypted, decrypted, buffer_size: int = 
                         chunk = encrypted.read(buffer_size)
                     except MemoryError:
                         logger.f("Out of RAM. Use smaller buffer size.")
-                    if len(chunk) < buffer_size:  # type: ignore
+                    if chunk is not None and len(chunk) < buffer_size:
                         logger.f("Buffer size too large. Use smaller buffer.")
                     continue
                 try:
@@ -302,15 +303,15 @@ def decrypt(logger, file_hash, cipher, encrypted, decrypted, buffer_size: int = 
                 except MemoryError:
                     logger.f("Out of RAM. Use smaller buffer size.")
 
-                if len(next_chunk) <= 36:  # type: ignore
-                    if len(next_chunk) == 36:  # type: ignore
+                if next_chunk is not None and len(next_chunk) <= 36:
+                    if len(next_chunk) == 36:
                         checksum = next_chunk
-                    elif len(next_chunk) == 0:  # type: ignore
+                    elif len(next_chunk) == 0:
                         checksum = chunk[-36:]
                         chunk = chunk[:-36]
                     else:
-                        checksum = chunk[-(36 - len(next_chunk)) :] + next_chunk  # type: ignore
-                        chunk = chunk[: -(36 - len(next_chunk))]  # type: ignore
+                        checksum = chunk[-(36 - len(next_chunk)) :] + next_chunk
+                        chunk = chunk[: -(36 - len(next_chunk))]
 
                 file_hash.update(chunk)
                 decrypted_chunk = cipher.decrypt(chunk)

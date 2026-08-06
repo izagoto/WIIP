@@ -10,6 +10,7 @@ DEFAULT_IV_OFFSET = 8
 def from_hex(logger, string: str) -> bytes:
     if len(string) != 64:
         logger.f(f"Key must be 64 characters, not {len(string)}.")
+    barr = b""
     try:
         barr = bytes.fromhex(string)
     except ValueError as e:
@@ -43,10 +44,7 @@ def parsecmdline() -> argparse.Namespace:
     parser.add_argument(
         "-bs", "--buffer-size", type=int, help=f"Bytes to process at a time (default: {io.DEFAULT_BUFFER_SIZE})."
     )
-    # parser.add_argument(
-    #     '-ng', '--no-guess', action='store_true',
-    #     help='Do not guess offsets, only use protobuf.'
-    # )
+    parser.add_argument("-ng", "--no-guess", action="store_true", help="Do not guess offsets, only use protobuf.")
     parser.add_argument("-np", "--no-protobuf", action="store_true", help="Do not parse protobuf, only guess offsets.")
     parser.add_argument(
         "-ivo",

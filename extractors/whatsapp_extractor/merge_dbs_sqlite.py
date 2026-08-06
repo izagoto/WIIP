@@ -6,6 +6,9 @@ import time
 import random
 import subprocess
 
+from paths import WHATSAPP_DATA_ROOT, account_db_dir, db_root, decrypted_db_file
+
+
 class MergeDB:
     def __init__(self):
         pass
@@ -210,8 +213,8 @@ class MergeDB:
                 sys.exit(1)
 
             for device_id in devices:
-                db2_path = f"extractors/whatsapp_extractor/db_backup/{device_id}.db"
-                db1_path = f"extractors/whatsapp_extractor/db_whatsapp/{device_id}/{device_id}.db"
+                db2_path = os.path.join(db_root(device_id), f"{device_id}.db")
+                db1_path = os.path.join(account_db_dir(device_id, "_account1"), f"{device_id}_account1.db")
 
                 if os.path.exists(db2_path):
                     print(f"Detected pulled DB for device {device_id}")
