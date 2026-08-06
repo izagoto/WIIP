@@ -36,22 +36,26 @@
 
 ## 2. Struktur Direktori Deploy
 
+Struktur deploy mengikuti layout repository (`infra/docker/`):
+
 ```
-/opt/evidentra/
+/opt/evidentra/                          # clone repository
 ├── .env
-├── docker-compose.yml
-├── backend/
-│   ├── Dockerfile
-│   ├── alembic.ini
-│   └── src/
+├── infra/
+│   ├── docker/
+│   │   ├── docker-compose.yml
+│   │   ├── Dockerfile.backend
+│   │   ├── Dockerfile.worker
+│   │   └── Dockerfile.frontend
+│   └── nginx/
+│       ├── nginx.conf
+│       └── ssl/
+├── backend/                             # FastAPI app (flat layout, tanpa src/)
+│   └── alembic.ini                      # dibuat saat setup Alembic
 ├── worker/
-│   ├── Dockerfile
-│   └── src/
-├── nginx/
-│   ├── nginx.conf
-│   └── ssl/
 ├── data/
 │   ├── postgres/
+│   ├── uploads/
 │   └── redis/
 └── logs/
 ```
@@ -88,23 +92,36 @@ LOG_LEVEL=INFO
 # CORS
 ALLOWED_ORIGINS=https://evidentra.example.com
 
-# File Storage
+# File Storage (development: filesystem, production: MinIO)
 STORAGE_PATH=/opt/evidentra/data/uploads
 MAX_UPLOAD_SIZE=100MB
+MINIO_ENDPOINT=minio:9000
+MINIO_ACCESS_KEY=change-me-in-production
+MINIO_SECRET_KEY=change-me-in-production
+MINIO_BUCKET=evidentra-evidence
+MINIO_USE_SSL=false
 ```
 
 ---
 
 ## 4. Docker Compose Configuration
 
-### 4.1 `docker-compose.yml`
+### 4.1 `infra/docker/docker-compose.yml`
+
+Jalankan dari root repository:
+
+```bash
+docker compose -f infra/docker/docker-compose.yml up -d --build
+```
 
 ```yaml
 version: '3.8'
 
 services:
   backend:
-    build: ./backend/Dockerfile
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.backend
     ports:
       - "8000:8000"
     environment:
@@ -114,8 +131,8 @@ services:
       - ENVIRONMENT=production
       - LOG_LEVEL=INFO
     volumes:
-      - ./data/uploads:/app/data/uploads
-      - ./logs:/app/logs
+      - ../../data/uploads:/app/data/uploads
+      - ../../logs:/app/logs
     depends_on:
       - postgres
       - redis
@@ -123,15 +140,17 @@ services:
     command: gunicorn backend.main:app --workers 4 --bind 0.0.0.0:8000 --worker-class uvicorn.workers.UvicornWorker
 
   worker:
-    build: ./worker/Dockerfile
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker
     environment:
       - DATABASE_URL=postgresql://evidentra:password@postgres:5432/evidentra_db
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=production
       - LOG_LEVEL=INFO
     volumes:
-      - ./data/uploads:/app/data/uploads
-      - ./logs:/app/logs
+      - ../../data/uploads:/app/data/uploads
+      - ../../logs:/app/logs
     depends_on:
       - postgres
       - redis
@@ -148,7 +167,6 @@ services:
       POSTGRES_DB: evidentra_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./data/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
   redis:
@@ -159,14 +177,27 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ../nginx/ssl:/etc/nginx/ssl
     depends_on:
       - backend
     restart: unless-stopped
@@ -174,9 +205,10 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  minio_data:
 ```
 
-### 4.2 Nginx Configuration
+### 4.2 Nginx Configuration (`infra/nginx/nginx.conf`)
 
 ```nginx
 upstream backend {
@@ -237,17 +269,17 @@ cp .env.example .env
 mkdir -p data/uploads logs
 
 # 4. Build dan jalankan semua service
-docker-compose up -d --build
+docker compose -f infra/docker/docker-compose.yml up -d --build
 
 # 5. Jalankan database migration
-docker-compose exec backend alembic upgrade head
+docker compose -f infra/docker/docker-compose.yml exec backend alembic upgrade head
 
 # 6. Buat admin user
-docker-compose exec backend python -m scripts.create_admin
+docker compose -f infra/docker/docker-compose.yml exec backend python -m scripts.seed
 
 # 7. Verifikasi semua service berjalan
-docker-compose ps
-docker-compose logs -f
+docker compose -f infra/docker/docker-compose.yml ps
+docker compose -f infra/docker/docker-compose.yml logs -f
 ```
 
 ### 5.2 Deploy Update
@@ -257,18 +289,18 @@ docker-compose logs -f
 git pull origin main
 
 # 2. Rebuild image
-docker-compose build
+docker compose -f infra/docker/docker-compose.yml build
 
 # 3. Jalankan migration
-docker-compose exec backend alembic upgrade head
+docker compose -f infra/docker/docker-compose.yml exec backend alembic upgrade head
 
 # 4. Restart service
-docker-compose up -d --no-deps backend worker
+docker compose -f infra/docker/docker-compose.yml up -d --no-deps backend worker
 
 # 5. Verifikasi
-docker-compose ps
-docker-compose logs backend
-docker-compose logs worker
+docker compose -f infra/docker/docker-compose.yml ps
+docker compose -f infra/docker/docker-compose.yml logs backend
+docker compose -f infra/docker/docker-compose.yml logs worker
 ```
 
 ### 5.3 Rollback
@@ -278,13 +310,13 @@ docker-compose logs worker
 git checkout <previous-commit>
 
 # 2. Rebuild image
-docker-compose build
+docker compose -f infra/docker/docker-compose.yml build
 
 # 3. Restart service
-docker-compose up -d --no-deps backend worker
+docker compose -f infra/docker/docker-compose.yml up -d --no-deps backend worker
 
 # 4. Verifikasi
-docker-compose ps
+docker compose -f infra/docker/docker-compose.yml ps
 ```
 
 ---
@@ -295,36 +327,36 @@ docker-compose ps
 
 ```bash
 # Lihat log backend
-docker-compose logs -f backend
+docker compose -f infra/docker/docker-compose.yml logs -f backend
 
 # Lihat log worker
-docker-compose logs -f worker
+docker compose -f infra/docker/docker-compose.yml logs -f worker
 
 # Lihat log semua service
-docker-compose logs -f
+docker compose -f infra/docker/docker-compose.yml logs -f
 ```
 
 ### 6.2 Health Check
 
 ```bash
 # Cek kesehatan API
-curl -f https://evidentra.example.com/api/v1/cases || echo "API is down"
+curl -f https://evidentra.example.com/api/v1/dashboard || echo "API is down"
 
 # Cek Redis
-docker-compose exec redis redis-cli ping
+docker compose -f infra/docker/docker-compose.yml exec redis redis-cli ping
 
 # Cek PostgreSQL
-docker-compose exec postgres psql -U evidentra -d evidentra_db -c "SELECT 1;"
+docker compose -f infra/docker/docker-compose.yml exec postgres psql -U evidentra -d evidentra_db -c "SELECT 1;"
 ```
 
 ### 6.3 Backup
 
 ```bash
 # Backup PostgreSQL
-docker-compose exec postgres pg_dump -U evidentra evidentra_db > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose -f infra/docker/docker-compose.yml exec postgres pg_dump -U evidentra evidentra_db > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Backup Redis
-docker-compose exec redis redis-cli BGSAVE
+docker compose -f infra/docker/docker-compose.yml exec redis redis-cli BGSAVE
 
 # Backup file uploads
 tar -czf uploads_backup_$(date +%Y%m%d).tar.gz /opt/evidentra/data/uploads/
@@ -337,7 +369,7 @@ tar -czf uploads_backup_$(date +%Y%m%d).tar.gz /opt/evidentra/data/uploads/
 certbot certonly --nginx -d evidentra.example.com
 
 # Restart nginx
-docker-compose restart nginx
+docker compose -f infra/docker/docker-compose.yml restart nginx
 ```
 
 ---
@@ -348,14 +380,14 @@ docker-compose restart nginx
 
 ```bash
 # Tambah worker API
-docker-compose up -d --scale backend=3
+docker compose -f infra/docker/docker-compose.yml up -d --scale backend=3
 ```
 
 ### 7.2 Horizontal Scaling Workers
 
 ```bash
 # Tambah Celery workers
-docker-compose up -d --scale worker=3
+docker compose -f infra/docker/docker-compose.yml up -d --scale worker=3
 ```
 
 ### 7.3 Database Connection Pooling
@@ -363,7 +395,7 @@ docker-compose up -d --scale worker=3
 Tambahkan PgBouncer untuk connection pooling:
 
 ```yaml
-# docker-compose.yml
+# docker-compose.yml (infra/docker/)
 pgbouncer:
   image: pgbouncer/pgbouncer
   ports:

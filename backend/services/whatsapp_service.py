@@ -1,0 +1,2 @@
+class WhatsAppService:
+    pass

@@ -47,8 +47,8 @@
 - **Linting**: `ruff` atau `flake8`
 - **Formatting**: `black`
 - **Type hints**: Wajib digunakan untuk semua fungsi dan parameter
-- **Docstring**: Gunakan Google-style docstring
-- **Komentar**: Tidak ada komentar di kode (sesuai aturan proyek)
+- **Docstring**: Opsional; gunakan Google-style hanya untuk public API, service interface, dan modul kompleks
+- **Komentar inline**: Hindari komentar yang hanya mengulang kode; kode harus self-explanatory melalui penamaan dan type hints
 - **Import**: Urutan — standard library → third-party → local
 
 ### 2.2 TypeScript (Frontend)

@@ -18,6 +18,15 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) dan 
 - Panduan deployment (`docs/DEPLOYMENT.md`)
 - Panduan kontribusi (`docs/CONTRIBUTING.md`)
 
+### Changed
+
+- Selaraskan inkonsistensi antar dokumen teknis:
+  - API: tambah `auth/refresh`, `auth/logout`, `whatsapp/import`; pisah `GET /dashboard` vs `GET /cases/{id}/summary`
+  - Database: perbaiki `wa_chat_jid` vs `conversation_record_id`; tambah tabel `whatsapp_imports`
+  - Deployment: path `infra/docker/`; tambah service MinIO
+  - Konvensi enum DB (lowercase) vs API Kanban (UPPERCASE)
+  - Standarisasi ke satu file `requirements.txt`
+
 ---
 
 ## [0.1.0] — 2026-08-05

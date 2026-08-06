@@ -12,24 +12,38 @@
 
 ---
 
+## Konvensi
+
+### Enum dan Status
+
+| Konteks | Format | Contoh |
+|---|---|---|
+| Database | lowercase snake_case | `todo`, `in_progress`, `open` |
+| API — status kasus | lowercase snake_case | `open`, `in_progress`, `closed` |
+| API — status Kanban task | UPPERCASE | `TODO`, `IN_PROGRESS`, `DONE` |
+
+Mapping antara database dan API dilakukan di layer Pydantic schema.
+
+### Identifikasi WhatsApp
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `conversation_id` (di API) | UUID | Primary key internal (`whatsapp_data.id`) |
+| `wa_chat_jid` | string | Identifier asli WhatsApp (contoh: `62812...@s.whatsapp.net`) |
+
+---
+
 ## Authentication
 
-### POST `/api/v1/auth/register`
+Akun **tidak** dapat didaftarkan sendiri melalui API publik. Akun admin pertama dibuat lewat `scripts/seed.py`; admin kemudian menambahkan investigator dan viewer melalui `POST /api/v1/users`.
 
-Register pengguna baru.
+### GET `/api/v1/auth/me`
 
-**Request Body:**
+Profil pengguna yang sedang login.
 
-```json
-{
-  "username": "string",
-  "email": "string",
-  "password": "string",
-  "role": "admin | investigator | viewer"
-}
-```
+**Auth:** Bearer token (semua role)
 
-**Response:** `201 Created`
+**Response:** `200 OK`
 
 ```json
 {
@@ -37,6 +51,7 @@ Register pengguna baru.
   "username": "string",
   "email": "string",
   "role": "string",
+  "is_active": true,
   "created_at": "datetime"
 }
 ```
@@ -59,14 +74,95 @@ Login dan dapatkan JWT token.
 ```json
 {
   "access_token": "string",
+  "refresh_token": "string",
   "token_type": "bearer",
   "expires_in": "integer"
 }
 ```
 
+### POST `/api/v1/auth/refresh`
+
+Perpanjang access token menggunakan refresh token.
+
+**Request Body:**
+
+```json
+{
+  "refresh_token": "string"
+}
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "access_token": "string",
+  "token_type": "bearer",
+  "expires_in": "integer"
+}
+```
+
+### POST `/api/v1/auth/logout`
+
+Revoke refresh token aktif (logout).
+
+**Request Body:**
+
+```json
+{
+  "refresh_token": "string"
+}
+```
+
+**Response:** `204 No Content`
+
 ---
 
 ## d.5 — WhatsApp Intelligence
+
+### POST `/api/v1/whatsapp/import`
+
+Impor hasil ekstraksi WhatsApp (dari `extractors/whatsapp_extractor/`) ke database platform (d.5.1).
+
+**Request Body:**
+
+```json
+{
+  "case_id": "uuid",
+  "device_id": "string",
+  "account": "account_wa_1 | account_wa_2 | account_wa_business",
+  "source_path": "string | null"
+}
+```
+
+| Field | Keterangan |
+|---|---|
+| `case_id` | Kasus yang akan dikaitkan dengan data WhatsApp |
+| `device_id` | ID perangkat (sesuai folder `data/raw_whatsapp_data/db/{device_id}/`) |
+| `account` | Subfolder akun hasil decrypt |
+| `source_path` | Opsional; override path absolut ke folder berisi `msgstore.db`. Default: path standar proyek |
+
+**Response:** `202 Accepted`
+
+```json
+{
+  "import_id": "uuid",
+  "status": "queued | processing | completed | failed",
+  "case_id": "uuid",
+  "device_id": "string",
+  "account": "string",
+  "conversations_imported": "integer | null",
+  "messages_imported": "integer | null"
+}
+```
+
+Proses impor dijalankan sebagai background task (Celery). Gunakan `GET /api/v1/whatsapp/import/{import_id}` untuk memantau status.
+
+### GET `/api/v1/whatsapp/import/{import_id}`
+
+Status pekerjaan impor WhatsApp.
+
+**Response:** `200 OK` — struktur sama dengan response `POST /api/v1/whatsapp/import`.
 
 ### GET `/api/v1/whatsapp/conversations`
 
@@ -318,15 +414,14 @@ Ubah status kasus.
 }
 ```
 
-### GET `/api/v1/cases/{case_id}/dashboard`
+### GET `/api/v1/dashboard`
 
-Dashboard investigasi (d.6.2).
+Dashboard investigasi global (d.6.2) — ringkasan seluruh kasus dan aktivitas sistem.
 
 **Response:** `200 OK`
 
 ```json
 {
-  "case_id": "uuid",
   "total_cases": "integer",
   "by_priority": {
     "low": "integer",
@@ -344,6 +439,38 @@ Dashboard investigasi (d.6.2).
     "completed": "integer",
     "overdue": "integer"
   },
+  "recent_activities": [
+    {
+      "id": "uuid",
+      "action": "string",
+      "user": "string",
+      "timestamp": "datetime"
+    }
+  ]
+}
+```
+
+### GET `/api/v1/cases/{case_id}/summary`
+
+Ringkasan investigasi untuk satu kasus — tugas, bukti, dan aktivitas terkait kasus tersebut.
+
+**Response:** `200 OK`
+
+```json
+{
+  "case_id": "uuid",
+  "title": "string",
+  "status": "open | in_progress | closed",
+  "priority": "low | medium | high | critical",
+  "task_summary": {
+    "total": "integer",
+    "todo": "integer",
+    "in_progress": "integer",
+    "done": "integer",
+    "overdue": "integer"
+  },
+  "evidence_count": "integer",
+  "whatsapp_conversation_count": "integer",
   "recent_activities": [
     {
       "id": "uuid",
@@ -406,7 +533,7 @@ Papan kerja Kanban (d.6.4).
 
 ### PATCH `/api/v1/tasks/{task_id}/move`
 
-Pindahkan tugas antar kolom Kanban.
+Pindahkan tugas antar kolom Kanban. Nilai `status` menggunakan format UPPERCASE; disimpan sebagai lowercase di database (`todo`, `in_progress`, `done`).
 
 **Request Body:**
 
@@ -434,11 +561,98 @@ Hierarki organisasi (d.6.5).
 
 ### GET `/api/v1/users`
 
-Daftar pengguna (d.6.6).
+Daftar pengguna (d.6.6). **Hanya admin.**
+
+**Query Parameters:**
+
+| Parameter | Tipe | Deskripsi |
+|---|---|---|
+| `role` | `string` | Filter role (`admin`, `investigator`, `viewer`) |
+| `is_active` | `boolean` | Filter status aktif |
+| `page` | `int` | Nomor halaman |
+| `limit` | `int` | Jumlah per halaman |
+
+**Response:** `200 OK`
+
+```json
+{
+  "total": 0,
+  "page": 1,
+  "limit": 50,
+  "data": [
+    {
+      "id": "uuid",
+      "username": "string",
+      "email": "string",
+      "role": "string",
+      "is_active": true,
+      "created_at": "datetime"
+    }
+  ]
+}
+```
+
+### GET `/api/v1/users/{user_id}`
+
+Detail pengguna. **Hanya admin.**
+
+**Response:** `200 OK` — sama seperti item di daftar pengguna.
 
 ### POST `/api/v1/users`
 
-Registrasi pengguna baru.
+Buat akun investigator atau viewer baru. **Hanya admin.**
+
+**Request Body:**
+
+```json
+{
+  "username": "string",
+  "email": "string",
+  "password": "string",
+  "role": "investigator | viewer"
+}
+```
+
+**Response:** `201 Created`
+
+```json
+{
+  "id": "uuid",
+  "username": "string",
+  "email": "string",
+  "role": "string",
+  "is_active": true,
+  "created_at": "datetime"
+}
+```
+
+### PATCH `/api/v1/users/{user_id}`
+
+Perbarui pengguna. **Hanya admin.** Tidak menghapus data — gunakan `is_active` untuk menonaktifkan/mengaktifkan kembali.
+
+**Request Body (semua field opsional):**
+
+```json
+{
+  "email": "string",
+  "role": "investigator | viewer",
+  "is_active": true,
+  "password": "string"
+}
+```
+
+**Response:** `200 OK` — format sama seperti detail pengguna.
+
+**Aturan:**
+- Role `admin` tidak dapat diubah lewat API
+- Admin tidak dapat menonaktifkan akun sendiri
+- Admin terakhir yang masih aktif tidak dapat dinonaktifkan
+
+### DELETE `/api/v1/users/{user_id}`
+
+Nonaktifkan pengguna (soft delete). **Hanya admin.** Data tetap ada di database dengan `is_active: false`.
+
+**Response:** `200 OK` — format sama seperti detail pengguna.
 
 ### PUT `/api/v1/users/{user_id}/role`
 
@@ -783,7 +997,6 @@ Advanced Analysis Dashboard (d.8.4).
     "p99_ms": "integer"
   }
 }
-```
 ```
 
 ---

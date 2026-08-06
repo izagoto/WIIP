@@ -37,8 +37,9 @@ Evidentra mengikuti prinsip keamanan berikut dalam setiap tahap pengembangan:
 ### 2.1 Autentikasi
 
 - **JWT (JSON Web Token)** — Access token + Refresh token
-- **Access Token** — Berlaku 30 menit
-- **Refresh Token** — Berlaku 7 hari
+- **Access Token** — Berlaku 30 menit (`POST /api/v1/auth/login`)
+- **Refresh Token** — Berlaku 7 hari (`POST /api/v1/auth/refresh`)
+- **Logout** — Revoke refresh token (`POST /api/v1/auth/logout`)
 - **Password Policy**:
   - Minimal 12 karakter
   - Harus mengandung huruf besar, huruf kecil, angka, dan karakter spesial
@@ -99,7 +100,7 @@ Evidentra mengikuti prinsip keamanan berikut dalam setiap tahap pengembangan:
 | Endpoint | Limit | Window |
 |---|---|---|
 | `/api/v1/auth/login` | 5 percobaan | 15 menit |
-| `/api/v1/auth/register` | 3 percobaan | 1 jam |
+| `/api/v1/users` (POST) | 10 percobaan | 1 jam |
 | `/api/v1/*` (general) | 100 request | 1 menit |
 | `/api/v1/intelligence/*` | 20 request | 1 menit |
 

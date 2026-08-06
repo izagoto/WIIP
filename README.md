@@ -1,153 +1,128 @@
-# Evidentra Digital Forensics & Intelligence Platform
+# Evidentra
 
-Platform perangkat lunak forensik digital terintegrasi untuk operasi penegakan hukum, dikembangkan sebagai bagian dari proyek **Digifor Brimob**.
+**Digital Forensics & Intelligence Platform** — proyek **Digifor Brimob**
 
-## Tentang Proyek
+Platform terpusat untuk akuisisi data digital, analisis komunikasi WhatsApp, manajemen kasus penyidikan, rantai kustodi barang bukti, dan korelasi intelijen strategis. Dirancang untuk operasi forensik digital di lapangan maupun di pusat, dengan penekanan pada keutuhan data, jejak audit, dan kontrol akses berbasis peran.
 
-Evidentra adalah platform terpusat yang menyediakan modul akuisisi data, WhatsApp Intelligence, manajemen kasus penyidikan, manajemen barang bukti digital, dan analisis kecerdasan strategis. Platform ini dirancang untuk mendukung kegiatan forensik digital di lapangan maupun di pusat.
+---
 
-## Struktur Proyek
+## Modul Platform
 
-```
-brimob_forensiq/
-├── backend/                    # FastAPI backend application (Backend Engineer)
-│   ├── main.py                 # FastAPI app entry point
-│   ├── api/                    # API routes & endpoints (v1)
-│   │   ├── v1/
-│   │   │   ├── auth.py
-│   │   │   ├── whatsapp.py
-│   │   │   ├── cases.py
-│   │   │   ├── tasks.py
-│   │   │   ├── evidence.py
-│   │   │   ├── intelligence.py
-│   │   │   └── dashboard.py
-│   │   └── deps.py
-│   ├── models/                 # SQLAlchemy ORM models
-│   ├── schemas/                # Pydantic request/response schemas
-│   ├── services/               # Business logic services
-│   ├── core/                   # Shared utilities (config, DB, auth, logging)
-│   ├── middleware/             # FastAPI middleware (auth, RBAC, audit)
-│   └── modules/                # Domain-specific business logic
-│       ├── d5_whatsapp/
-│       ├── d6_operations/
-│       ├── d7_evidence/
-│       └── d8_intelligence/
-├── worker/                     # Celery background workers (Backend Engineer)
-│   ├── celery_app.py
-│   └── tasks/
-├── ml/                         # ML/AI models & pipelines (ML/AI Specialist)
-│   ├── ner/
-│   ├── graph/
-│   ├── apk/
-│   ├── pipeline/
-│   └── utils/
-├── frontend/                   # React/Vue SPA (Frontend Engineer)
-│   ├── public/
-│   └── src/
-│       ├── components/
-│       ├── pages/
-│       ├── hooks/
-│       ├── services/
-│       ├── store/
-│       ├── types/
-│       └── utils/
-├── extractors/                 # Data extraction tools (existing)
-│   └── whatsapp_extractor/
-├── tests/                      # All tests (QA Engineer)
-│   ├── unit/
-│   ├── integration/
-│   ├── e2e/
-│   ├── fixtures/
-│   └── factories/
-├── data/                       # Data files
-│   ├── raw_evidence/
-│   ├── raw_whatsapp_data/
-│   ├── processed/
-│   └── exports/
-├── docs/                       # Documentation
-├── infra/                      # Infrastructure configs (Docker, nginx, alembic)
-├── scripts/                    # Utility & dev scripts
-├── backend/
-├── worker/
-├── ml/
-├── frontend/
-├── tests/
-├── infra/
-├── scripts/
-├── .env.example
-├── .gitignore
-├── pyrightconfig.json
-├── requirements.txt            # Base dependencies (extractors)
-├── requirements-ml.txt         # ML/AI dependencies
-├── requirements-dev.txt        # Dev/testing dependencies
-└── README.md
-```
-
-## Peran & Direktori
-
-| Peran | Direktori Utama |
-|---|---|
-| **Backend Engineer** | `backend/`, `worker/` |
-| **ML/AI Specialist** | `ml/` |
-| **Frontend Engineer** | `frontend/` |
-| **QA Engineer** | `tests/` |
-
-## Sub-Modul
-
-| Kode | Modul | Direktori |
+| Kode | Modul | Ringkasan |
 |---|---|---|
-| d.5 | WhatsApp Intelligence | `backend/modules/d5_whatsapp/` |
-| d.6 | Tactical Operations | `backend/modules/d6_operations/` |
-| d.7 | Digital Evidence Management | `backend/modules/d7_evidence/` |
-| d.8 | Strategic Intelligence | `backend/modules/d8_intelligence/` |
+| **d.5** | WhatsApp Intelligence | Impor, profil komunikasi, pencarian pesan, dan pemetaan konteks percakapan |
+| **d.6** | Tactical Operations | IAM, manajemen kasus, tugas Kanban, hierarki organisasi, dan audit log |
+| **d.7** | Digital Evidence Management | Registrasi bukti, kustodi, transfer, verifikasi integritas SHA-256, dan geospasial |
+| **d.8** | Strategic Intelligence | NER dokumen, analisis graf relasi, inspeksi APK, dan dashboard intelijen |
 
-## Teknologi Utama
+Spesifikasi lengkap modul mengacu pada dokumen sumber di [`docs/Solution_Pack_Digifor_Brimob.pdf`](docs/Solution_Pack_Digifor_Brimob.pdf) dan [`docs/Spectek_Digital_Forensics_Intelligence_Module.pdf`](docs/Spectek_Digital_Forensics_Intelligence_Module.pdf).
 
-- **Python 3.11+** — bahasa utama
-- **FastAPI** — web framework untuk REST API
-- **SQLAlchemy 2.0** — ORM
-- **PostgreSQL** — database produksi
-- **Celery + Redis** — background tasks & caching
-- **Protocol Buffers** — serialisasi data WhatsApp crypto
+---
 
-## Instalasi
+## Status Implementasi
 
-### Prasyarat
+| Sprint | Cakupan | Status |
+|---|---|---|
+| **Sprint 1** | Foundation — auth JWT, model database, migrasi, seed, health check | Selesai |
+| **Sprint 2** | Case platform API — kasus, tugas, Kanban, dashboard, RBAC | Selesai |
+| **Sprint 3** | Org hierarchy, audit logs API, evidence, laporan PDF | Direncanakan |
+
+API yang sudah tersedia dapat diuji melalui Swagger UI di [`/api/docs`](http://localhost:8000/api/docs). Riwayat perubahan terperinci ada di [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
+
+---
+
+## Prasyarat
 
 - Python 3.11+
-- PostgreSQL 15+
-- Redis 7+
-- Node.js 18+ (untuk frontend)
+- PostgreSQL 15+ (produksi) — SQLite untuk development lokal
+- Redis 7+ (worker & cache)
+- Node.js 18+ (frontend, opsional)
 
-### Setup Environment
+---
+
+## Menjalankan (Development)
 
 ```bash
-# Backend
+# 1. Virtual environment & dependensi
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-pip install -r requirements-ml.txt
-pip install -r requirements-dev.txt
 
-# Frontend
-cd frontend
-npm install
+# 2. Konfigurasi environment (file di root proyek)
+cp .env.example .env
+# Edit .env — set SEED_ADMIN_* dan SEED_INVESTIGATOR_* untuk bootstrap user
+
+# 3. Migrasi database
+alembic upgrade head
+
+# 4. Backend API
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Menjalankan
+Saat startup, aplikasi otomatis membuat tabel database dan menjalankan seed (jika `SEED_ON_STARTUP=true` dan `ENVIRONMENT=development`). Seed manual: `python scripts/seed.py`.
 
-```bash
-# Backend
-uvicorn backend.main:app --reload
+| Endpoint | URL |
+|---|---|
+| Swagger UI | http://localhost:8000/api/docs |
+| Health check | http://localhost:8000/health |
 
-# Worker (Celery)
-celery -A worker.celery_app worker --loglevel=info
+**Kebijakan autentikasi:** tidak ada registrasi publik. Akun admin bootstrap via seed; admin menambahkan investigator dan viewer melalui `POST /api/v1/users`.
 
-# Frontend
-cd frontend
-npm run dev
-```
+---
+
+## Dokumentasi
+
+Seluruh dokumentasi teknis dan operasional berada di direktori [`docs/`](docs/).
+
+### Skenario & Konteks Bisnis
+
+| Dokumen | Deskripsi |
+|---|---|
+| [`PROJECT_SCENARIO.md`](docs/PROJECT_SCENARIO.md) | Skenario eksekusi proyek, tujuan, dan ruang lingkup Digifor Brimob |
+| [`SISTEM_SCENARIO.md`](docs/SISTEM_SCENARIO.md) | Alur sistem end-to-end, aktor, dan interaksi antar modul |
+| [`ROLE_REQUIREMENTS.md`](docs/ROLE_REQUIREMENTS.md) | Kebutuhan peran tim (Backend, ML/AI, Frontend, QA) per sprint |
+
+### Arsitektur & Spesifikasi Teknis
+
+| Dokumen | Deskripsi |
+|---|---|
+| [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Desain arsitektur modular monolith, lapisan komponen, dan alur data |
+| [`API_SPECIFICATION.md`](docs/API_SPECIFICATION.md) | Spesifikasi REST API (`/api/v1`), konvensi enum, request/response |
+| [`DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | Skema database, relasi entitas, indeks, dan panduan migrasi Alembic |
+| [`evidentra.dbml`](docs/evidentra.dbml) | Diagram ERD (DBML) untuk import ke [dbdiagram.io](https://dbdiagram.io/d) |
+
+### Keamanan & Operasional
+
+| Dokumen | Deskripsi |
+|---|---|
+| [`SECURITY.md`](docs/SECURITY.md) | Kebijakan keamanan, klasifikasi data, JWT, RBAC, dan rate limiting |
+| [`DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Panduan deployment Docker, konfigurasi server, dan environment produksi |
+| [`TEST_PLAN.md`](docs/TEST_PLAN.md) | Strategi pengujian unit, integrasi, E2E, performa, dan keamanan |
+
+### AI On-Premise
+
+| Dokumen | Deskripsi |
+|---|---|
+| [`AI_TECHNICAL_ANALYSIS.md`](docs/AI_TECHNICAL_ANALYSIS.md) | Analisis teknis implementasi AI lokal untuk d.5.3 dan d.8.1 |
+| [`AI_INSTALL_MINI_PC.md`](docs/AI_INSTALL_MINI_PC.md) | Panduan instalasi stack AI on-premise di perangkat Mini PC |
+
+### Pengembangan
+
+| Dokumen | Deskripsi |
+|---|---|
+| [`CONTRIBUTING.md`](docs/CONTRIBUTING.md) | Alur kontribusi, branch strategy, standar kode, dan proses review |
+| [`CHANGELOG.md`](docs/CHANGELOG.md) | Riwayat perubahan proyek (Keep a Changelog) |
+
+---
+
+## Stack Teknologi
+
+Python 3.11 · FastAPI · SQLAlchemy 2.0 · PostgreSQL / SQLite · Celery · Redis · React (frontend) · Protocol Buffers (WhatsApp crypto)
+
+Detail arsitektur dan versi dependensi: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+---
 
 ## Lisensi
 
-Proyek ini bersifat internal dan untuk kepentingan operasional Brimob.
+Proyek ini bersifat **internal** dan ditujukan untuk kepentingan operasional Brimob. Distribusi atau penggunaan di luar lingkup yang ditetapkan memerlukan persetujuan resmi.

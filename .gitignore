@@ -2,9 +2,19 @@
 # Environment & secrets
 # =============================================================================
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
+
+# Credentials & keys
+secrets/
+credentials.json
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+*.key
+!*.key.example
 
 # =============================================================================
 # Python
@@ -72,6 +82,9 @@ extractors/whatsapp_extractor/db_backup/
 
 # File database / backup WhatsApp
 *.db
+*.db-wal
+*.db-shm
+*-journal
 *.sqlite
 *.sqlite3
 *.db.crypt
@@ -137,6 +150,8 @@ Desktop.ini
 .kilo/
 
 # =============================================================================
-# Local dev databases
+# Local dev storage & databases
 # =============================================================================
 wiip_dev.db
+evidentra.db
+data/uploads/

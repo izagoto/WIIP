@@ -100,9 +100,14 @@ Setiap sub-modul (d.5–d.8) dipisah menjadi modul independen:
 - Tidak digunakan di produksi
 
 #### Redis
-- Cache untuk dashboard real-time
+- Cache untuk dashboard real-time (`GET /api/v1/dashboard`)
 - Broker untuk Celery task queue
-- Session storage untuk JWT token
+- Session storage untuk JWT refresh token revocation list
+
+#### MinIO (Produksi)
+- Object storage untuk file bukti digital, dokumen NER, dan APK
+- Metadata file disimpan di PostgreSQL (`documents.file_url`)
+- Development menggunakan filesystem lokal (`STORAGE_PATH`)
 
 ### 2.4 Worker Layer (Celery)
 
@@ -134,6 +139,9 @@ WhatsApp Backup (msgstore.db)
         │
         ▼
 [WhatsApp Extractor] ──► SQLite Parsing
+        │
+        ▼
+[Import API] ──► POST /api/v1/whatsapp/import (Celery)
         │
         ▼
 [Data Validation] ──► Validasi data percakapan

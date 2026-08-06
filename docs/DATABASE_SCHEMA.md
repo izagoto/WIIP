@@ -25,6 +25,23 @@ Evidentra menggunakan **PostgreSQL** sebagai database produksi dan **SQLite** un
 
 Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 
+### 1.3 Konvensi Enum
+
+| Konteks | Format | Contoh |
+|---|---|---|
+| Kolom database | lowercase snake_case | `todo`, `in_progress`, `open` |
+| API — status kasus | lowercase snake_case | `open`, `in_progress`, `closed` |
+| API — status Kanban task | UPPERCASE (di layer Pydantic) | `TODO`, `IN_PROGRESS`, `DONE` |
+
+### 1.4 Object Storage (MinIO)
+
+File bukti digital, dokumen NER, dan APK disimpan di **MinIO** (produksi) atau filesystem lokal (development). Metadata file dicatat di tabel `documents`; kolom `file_url` berisi path/URL object storage.
+
+| Environment | Storage |
+|---|---|
+| Development | `STORAGE_PATH` lokal (filesystem) |
+| Production | MinIO bucket (`MINIO_BUCKET`, `MINIO_ENDPOINT`) |
+
 ---
 
 ## 2. Entity Relationship Diagram
@@ -51,7 +68,7 @@ Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 ├─────────────────┤       ├─────────────────┤       ├─────────────────┤
 │ id (PK)          │       │ id (PK)         │       │ id (PK)          │
 │ case_id (FK)     │       │ case_id (FK)    │       │ evidence_id(FK)  │
-│ conversation_id  │       │ type            │       │ holder_id(FK)    │
+│ wa_chat_jid      │       │ type            │       │ holder_id(FK)    │
 │ contact          │       │ brand           │       │ action           │
 │ message_count    │       │ imei            │       │ from_user_id(FK) │
 │ first_msg_date   │       │ serial_number   │       │ to_user_id(FK)   │
@@ -94,7 +111,7 @@ Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 │ source_node_id   │       │ package_name    │       │ parent_id (FK)   │
 │ target_node_id   │       │ version         │       │ name             │
 │ weight           │       │ permissions     │       │ role             │
-│ relationship     │       │ components      │       │ parent_id        │
+│ relationship     │       │ components      │       │ created_at       │
 │ created_at       │       │ certificate     │       │ created_at       │
 └─────────────────┘       │ threat_indicators│      └─────────────────┘
                           │ created_at       │
@@ -163,11 +180,13 @@ Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 
 ### 3.4 `whatsapp_data`
 
+Ringkasan percakapan WhatsApp per kasus. `wa_chat_jid` adalah identifier asli dari WhatsApp; `id` (UUID) digunakan sebagai `conversation_id` di API.
+
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
-| `id` | UUID | PK | ID unik |
+| `id` | UUID | PK | ID internal — dipakai sebagai `conversation_id` di API |
 | `case_id` | UUID | FK → cases(id) | Kasus terkait |
-| `conversation_id` | VARCHAR(255) | NOT NULL | ID percakapan WhatsApp |
+| `wa_chat_jid` | VARCHAR(255) | NOT NULL | JID percakapan WhatsApp asli (contoh: `62812...@s.whatsapp.net`) |
 | `contact` | VARCHAR(255) | | Nama kontak |
 | `message_count` | INTEGER | default 0 | Jumlah pesan |
 | `first_message_date` | TIMESTAMP | | Tanggal pesan pertama |
@@ -175,12 +194,14 @@ Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 | `group_name` | VARCHAR(255) | | Nama grup (jika grup) |
 | `created_at` | TIMESTAMP | default NOW() | |
 
+**Unique constraint:** `(case_id, wa_chat_jid)` — satu JID per kasus.
+
 ### 3.5 `whatsapp_messages`
 
 | Kolom | Tipe | Constraint | Keterangan |
 |---|---|---|---|
-| `id` | UUID | PK | ID unik |
-| `conversation_id` | UUID | FK → whatsapp_data(id) | Percakapan terkait |
+| `id` | UUID | PK | ID unik pesan |
+| `conversation_record_id` | UUID | FK → whatsapp_data(id), NOT NULL | Referensi ke baris `whatsapp_data` |
 | `timestamp` | TIMESTAMP | NOT NULL | Waktu pesan |
 | `sender` | VARCHAR(255) | NOT NULL | Pengirim |
 | `receiver` | VARCHAR(255) | NOT NULL | Penerima |
@@ -258,7 +279,7 @@ Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 | `case_id` | UUID | FK → cases(id) | Kasus terkait |
 | `file_name` | VARCHAR(255) | NOT NULL | Nama file |
 | `file_type` | VARCHAR(20) | NOT NULL | csv, pdf, apk, dll. |
-| `file_url` | VARCHAR(500) | NOT NULL | URL/file path |
+| `file_url` | VARCHAR(500) | NOT NULL | URL/path object di MinIO atau filesystem lokal |
 | `extracted_text` | TEXT | | Teks yang diekstrak |
 | `created_at` | TIMESTAMP | default NOW() | |
 
@@ -332,6 +353,25 @@ Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 | `metric_value` | JSONB | NOT NULL | Nilai metrik |
 | `timestamp` | TIMESTAMP | default NOW() | |
 
+### 3.17 `whatsapp_imports`
+
+Pelacakan pekerjaan impor WhatsApp (`POST /api/v1/whatsapp/import`).
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| `id` | UUID | PK | ID impor (`import_id` di API) |
+| `case_id` | UUID | FK → cases(id), NOT NULL | Kasus target |
+| `device_id` | VARCHAR(100) | NOT NULL | ID perangkat sumber |
+| `account` | VARCHAR(50) | NOT NULL | Nama folder akun (`account_wa_1`, dll.) |
+| `source_path` | VARCHAR(500) | | Path override ke folder `msgstore.db` |
+| `status` | VARCHAR(20) | default 'queued' | queued, processing, completed, failed |
+| `conversations_imported` | INTEGER | | Jumlah percakapan yang diimpor |
+| `messages_imported` | INTEGER | | Jumlah pesan yang diimpor |
+| `error_message` | TEXT | | Pesan error jika gagal |
+| `celery_task_id` | VARCHAR(255) | | ID task Celery terkait |
+| `created_at` | TIMESTAMP | default NOW() | |
+| `completed_at` | TIMESTAMP | | Waktu selesai |
+
 ---
 
 ## 4. Indexes
@@ -345,7 +385,10 @@ Menggunakan **SQLAlchemy 2.0** dengan **Alembic** untuk migrasi database.
 | `tasks` | `status` | B-tree | Filter status tugas |
 | `tasks` | `assignee_id` | B-tree | Cari tugas per personel |
 | `whatsapp_data` | `case_id` | B-tree | Join kasus-WhatsApp |
+| `whatsapp_data` | `wa_chat_jid` | B-tree | Pencarian berdasarkan JID WhatsApp |
 | `whatsapp_data` | `contact` | B-tree | Pencarian berdasarkan kontak |
+| `whatsapp_data` | `(case_id, wa_chat_jid)` | UNIQUE | Satu JID per kasus |
+| `whatsapp_messages` | `conversation_record_id` | B-tree | Join percakapan-pesan |
 | `evidence` | `case_id` | B-tree | Join kasus-bukti |
 | `evidence` | `sha256_hash` | B-tree | Pencarian berdasarkan hash |
 | `custody_logs` | `evidence_id` | B-tree | Join bukti-riwayat custody |
@@ -384,6 +427,20 @@ alembic upgrade head
 | Revision | Deskripsi | Tanggal |
 |---|---|---|
 | `base` | Buat semua tabel awal | 2026-08-05 |
+
+### 5.4 Diagram Visual (dbdiagram.io)
+
+File DBML untuk import ke [dbdiagram.io](https://dbdiagram.io/d):
+
+```
+docs/evidentra.dbml
+```
+
+Cara pakai:
+1. Buka https://dbdiagram.io/d
+2. Hapus konten default di panel kiri
+3. Copy-paste seluruh isi `docs/evidentra.dbml`
+4. Diagram ERD akan ter-render otomatis dengan relasi dan table groups per modul
 
 ---
 

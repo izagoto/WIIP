@@ -51,6 +51,7 @@ Testing dilakukan pada 4 level:
 | TC-D5-007 | d.5.3 AI Context Mapping | Integration | Validasi konteks mapping dari percakapan WhatsApp |
 | TC-D5-008 | d.5.4 Search, Filter & Insight Reporting | Unit | Validasi filter berdasarkan kontak, waktu, keyword |
 | TC-D5-009 | d.5.4 Search, Filter & Insight Reporting | Integration | Validasi pencarian end-to-end dari API ke database |
+| TC-D5-010 | d.5.1 WhatsApp Import API | Integration | Validasi `POST /api/v1/whatsapp/import` mengimpor msgstore.db ke PostgreSQL |
 
 ### 3.2 d.6 — Tactical Operations & Case Platform
 
@@ -58,7 +59,7 @@ Testing dilakukan pada 4 level:
 |---|---|---|---|
 | TC-D6-001 | d.6.1 Case Registration | Unit | Validasi CRUD kasus |
 | TC-D6-002 | d.6.1 Case Registration | Integration | Validasi pendaftaran kasus via API endpoint |
-| TC-D6-003 | d.6.2 Investigation Dashboard | Integration | Validasi agregasi data kasus, prioritas, progres |
+| TC-D6-003 | d.6.2 Investigation Dashboard | Integration | Validasi `GET /api/v1/dashboard` — agregasi global kasus, prioritas, progres |
 | TC-D6-004 | d.6.3 Task Assignment | Unit | Validasi penugasan tugas dengan checklist dan tenggat waktu |
 | TC-D6-005 | d.6.3 Task Assignment | Integration | Validasi task assignment via API endpoint |
 | TC-D6-006 | d.6.4 Kanban Workflow Tracking | Integration | Validasi perpindahan status TODO → IN_PROGRESS → DONE |
@@ -67,6 +68,8 @@ Testing dilakukan pada 4 level:
 | TC-D6-009 | d.6.6 Identity & Access Management | Integration | Validasi role-based endpoint protection |
 | TC-D6-010 | d.6.7 System Audit & Logging | Integration | Validasi log audit tercatat untuk setiap aksi pengguna |
 | TC-D6-011 | d.6.8 Report Generation Engine | Integration | Validasi PDF laporan dihasilkan dengan data yang benar |
+| TC-D6-012 | d.6.2 Case Summary | Integration | Validasi `GET /api/v1/cases/{case_id}/summary` — ringkasan per kasus |
+| TC-D6-013 | d.6.6 Auth Refresh/Logout | Integration | Validasi `POST /api/v1/auth/refresh` dan `POST /api/v1/auth/logout` |
 
 ### 3.3 d.7 — Digital Evidence Management
 
@@ -120,7 +123,7 @@ class EvidentraUser(HttpUser):
 
     @task(3)
     def view_dashboard(self):
-        self.client.get("/api/v1/cases/dashboard", headers={"Authorization": "Bearer <token>"})
+        self.client.get("/api/v1/dashboard", headers={"Authorization": "Bearer <token>"})
 
     @task(2)
     def search_whatsapp(self):
@@ -143,7 +146,8 @@ class EvidentraUser(HttpUser):
 
 | Target | Endpoint |
 |---|---|
-| Authentication | `/api/v1/auth/login`, `/api/v1/auth/register` |
+| Authentication | `/api/v1/auth/login`, `/api/v1/auth/me`, `POST /api/v1/users` (admin only) |
+| User management | `GET/PATCH/DELETE /api/v1/users` (admin only, soft delete via `is_active`) |
 | Cases | `/api/v1/cases`, `/api/v1/cases/{id}` |
 | Evidence | `/api/v1/evidence`, `/api/v1/evidence/{id}` |
 | WhatsApp | `/api/v1/whatsapp/*` |

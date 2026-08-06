@@ -473,7 +473,8 @@ Tambahkan ke `requirements.txt`:
 ```txt
 # AI/NLP
 spacy>=3.7.0
-spacy-lang-id>=1.0.0
+spacy-lookups-data>=1.0.5
+# Model ID: python -m spacy download id_core_news_lg
 transformers>=4.35.0
 sentence-transformers>=3.0.0
 torch>=2.0.0

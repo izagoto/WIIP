@@ -69,13 +69,13 @@ brimob_forensiq/
 
 | Tugas | Detail |
 |---|---|
-| Setup project scaffold | Buat struktur `backend/`, `worker/`, `modules/d.5/`, `modules/d.6/`, `modules/d.7/`, `modules/d.8/` |
+| Setup project scaffold | Buat struktur `backend/`, `worker/`, `modules/d5_whatsapp/`, `modules/d6_operations/`, `modules/d7_evidence/`, `modules/d8_intelligence/` |
 | Database schema design | Rancang schema PostgreSQL: tabel untuk kasus, tugas, bukti, pengguna, audit log, WhatsApp data |
 | SQLAlchemy models | Implementasi ORM models untuk semua entitas |
 | Alembic migrations | Setup migration pipeline |
 | FastAPI app scaffold | Buat aplikasi FastAPI utama dengan routing structure |
 | Pydantic schemas | Buat request/response schemas untuk semua endpoint |
-| WhatsApp extractor integration | Integrasikan kode WhatsApp extractor existing ke dalam `modules/d.5/` |
+| WhatsApp extractor integration | Integrasikan kode WhatsApp extractor ke `modules/d5_whatsapp/` + endpoint `POST /api/v1/whatsapp/import` |
 | Redis setup | Setup Redis untuk caching dan Celery broker |
 
 #### Sprint 2 — Case Platform API
@@ -84,7 +84,7 @@ brimob_forensiq/
 |---|---|
 | Case CRUD API | Endpoint untuk d.6.1 (Case Registration) |
 | Task CRUD API | Endpoint untuk d.6.3 (Task Assignment) |
-| Dashboard data API | Endpoint untuk d.6.2 (Investigation Dashboard) — agregasi data kasus, prioritas, progres |
+| Dashboard data API | Endpoint `GET /api/v1/dashboard` untuk d.6.2 (Investigation Dashboard) — agregasi global kasus, prioritas, progres |
 | Kanban API | Endpoint untuk d.6.4 (Kanban Workflow Tracking) — update status tugas |
 | Auth scaffold | Implementasi JWT auth, endpoint login/register, middleware |
 | RBAC middleware | Struktur dasar RBAC untuk kontrol akses endpoint |
@@ -130,29 +130,16 @@ brimob_forensiq/
 | API documentation | Finalisasi Swagger/OpenAPI docs untuk semua endpoint |
 | Integration tests | Tulis dan jalankan integration tests untuk semua endpoint |
 
-### 2.3 Dependencies yang Perlu Diinstall
+### 2.3 Dependencies
 
-```
-fastapi>=0.104.0
-uvicorn>=0.24.0
-sqlalchemy>=2.0.0
-alembic>=1.12.0
-psycopg2-binary>=2.9.0
-pydantic>=2.0.0
-pydantic-settings>=2.0.0
-celery>=5.3.0
-redis>=5.0.0
-authlib>=1.2.0
-bcrypt>=4.0.0
-weasyprint>=60.0
-reportlab>=4.0.0
-pytest>=7.0.0
-pytest-asyncio>=0.23.0
-httpx>=0.25.0
-python-multipart>=0.0.6
-python-jose>=3.3.0
-passlib>=1.7.0
-```
+Semua dependensi Python dikelola dalam satu file `requirements.txt` (extractor, backend, ML, dev/testing).
+
+### 2.4 File Requirements Proyek
+
+| File | Isi |
+|---|---|
+| `requirements.txt` | Semua dependensi Python proyek |
+| `frontend/package.json` | Dependensi frontend |
 
 ---
 
@@ -218,7 +205,8 @@ passlib>=1.7.0
 
 ```
 spacy>=3.7.0
-spacy-lang-id>=1.0.0
+spacy-lookups-data>=1.0.5
+# Model ID: python -m spacy download id_core_news_sm
 transformers>=4.35.0
 torch>=2.0.0
 networkx>=3.0
@@ -509,6 +497,6 @@ Keterangan: **R** = Responsible, **C** = Consulted, **I** = Informed
 3. **Frontend Engineer** bisa mulai parallel dengan Backend di Sprint 1 — mock API bisa digunakan selama backend belum siap.
 4. **QA Engineer** mulai aktif di Sprint 1 (test strategy & scaffolding) dan menulis tests untuk setiap sprint — tidak menunggu fitur selesai.
 5. **pyrightconfig.json** sudah merencanakan `backend/` dan `worker/` direktori — pastikan struktur ini dijalankan.
-6. Semua dependensi baru harus ditambahkan ke `requirements.txt` (backend/ML/QA) atau `package.json` (frontend).
-7. Python style yang sudah ada di proyek: tidak ada komentar di kode (sesuai aturan "no comments"), gunakan type hints, dan ikuti konvensi penamaan yang sudah ada.
+6. Semua dependensi Python baru ditambahkan ke `requirements.txt`; dependensi frontend ke `package.json`.
+7. Python style: type hints wajib; hindari komentar inline yang tidak perlu; docstring opsional untuk public API.
 8. QA Engineer bertanggung jawab untuk memastikan **Definition of Done** terpenuhi sebelum setiap fitur dianggap selesai.

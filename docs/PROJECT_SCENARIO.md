@@ -360,7 +360,7 @@ brimob_forensiq/
 │   ├── processed/
 │   └── exports/
 ├── tests/                           ← NEW: unit and integration tests
-├── requirements.txt
+├── requirements.txt                 ← semua dependensi Python
 ├── pyrightconfig.json
 └── README.md                        ← NEW: project documentation
 ```
