@@ -51,10 +51,10 @@ class AuthService:
         self.db.refresh(user)
         return user
 
-    def login(self, username: str, password: str, ip_address: str | None = None) -> tuple[str, str, int]:
-        user = self.db.scalar(select(User).where(User.username == username))
+    def login(self, email: str, password: str, ip_address: str | None = None) -> tuple[str, str, int]:
+        user = self.db.scalar(select(User).where(User.email == email))
         if not user or not verify_password(password, user.password_hash):
-            raise UnauthorizedError("Invalid username or password")
+            raise UnauthorizedError("Invalid email or password")
         if not user.is_active:
             raise UnauthorizedError("User account is inactive")
 

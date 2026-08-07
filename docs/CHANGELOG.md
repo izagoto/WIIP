@@ -10,13 +10,8 @@ Format berdasarkan [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) dan 
 
 ### Added
 
-- Dokumentasi skenario proyek (`docs/PROJECT_SCENARIO.md`)
-- Dokumentasi kebutuhan peran tim (`docs/ROLE_REQUIREMENTS.md`)
-- Spesifikasi API (`docs/API_SPECIFICATION.md`)
-- Desain arsitektur (`docs/ARCHITECTURE.md`)
-- Rencana test (`docs/TEST_PLAN.md`)
-- Panduan deployment (`docs/DEPLOYMENT.md`)
-- Panduan kontribusi (`docs/CONTRIBUTING.md`)
+- Sprint 3 backend APIs: organization hierarchy, audit logs (admin), case PDF report, evidence CRUD
+- Schemas and services for organization, audit, evidence, and PDF report generation
 
 ### Changed
 

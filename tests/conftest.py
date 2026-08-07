@@ -69,7 +69,7 @@ def admin_user(db_session):
 def admin_headers(client, admin_user):
     login = client.post(
         "/api/v1/auth/login",
-        json={"username": "admin", "password": ADMIN_PASSWORD},
+        json={"email": "admin@example.com", "password": ADMIN_PASSWORD},
     )
     token = login.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -89,7 +89,7 @@ def auth_headers(client, admin_headers):
     )
     login = client.post(
         "/api/v1/auth/login",
-        json={"username": "investigator1", "password": "SecurePass123!"},
+        json={"email": "investigator1@example.com", "password": "SecurePass123!"},
     )
     token = login.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -109,7 +109,7 @@ def viewer_headers(client, admin_headers):
     )
     login = client.post(
         "/api/v1/auth/login",
-        json={"username": "viewer1", "password": "SecurePass123!"},
+        json={"email": "viewer1@example.com", "password": "SecurePass123!"},
     )
     token = login.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

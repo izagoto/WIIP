@@ -76,7 +76,7 @@ def test_deactivate_user_is_soft_delete(client, admin_headers):
 
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"username": "tempuser", "password": "SecurePass123!"},
+        json={"email": "tempuser@example.com", "password": "SecurePass123!"},
     )
     assert login_response.status_code == 401
 
@@ -105,7 +105,7 @@ def test_reactivate_user(client, admin_headers):
 
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"username": "reactivate", "password": "SecurePass123!"},
+        json={"email": "reactivate@example.com", "password": "SecurePass123!"},
     )
     assert login_response.status_code == 200
 

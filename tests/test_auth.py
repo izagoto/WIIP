@@ -35,7 +35,7 @@ def test_admin_creates_user_and_login(client, admin_headers):
 
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"username": "testuser", "password": "SecurePass123!"},
+        json={"email": "testuser@example.com", "password": "SecurePass123!"},
     )
     assert login_response.status_code == 200
     tokens = login_response.json()

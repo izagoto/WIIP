@@ -2,6 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi.responses import Response
 
 from backend.api.deps import CurrentUser, DbSession, get_client_ip, require_roles
 from backend.models.case import Case
@@ -18,7 +19,10 @@ from backend.schemas.case import (
     TaskResponse,
 )
 from backend.schemas.common import PaginatedResponse
+from backend.schemas.intelligence import CaseAnalyzeRequest, CaseAnalyzeResponse, CaseIntegrationResponse
 from backend.services.case_service import CaseService
+from backend.services.integration_service import IntegrationService
+from backend.services.report_service import ReportService
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
 
@@ -93,6 +97,49 @@ def list_cases(
         page=page,
         limit=limit,
         data=[_case_response(case) for case in cases],
+    )
+
+
+@router.get("/{case_id}/integration", response_model=CaseIntegrationResponse)
+def get_case_integration(
+    case_id: uuid.UUID,
+    db: DbSession,
+    _user: CurrentUser,
+    _auth: ReadUser,
+) -> CaseIntegrationResponse:
+    return IntegrationService(db).get_case_integration(case_id)
+
+
+@router.post("/{case_id}/analyze", response_model=CaseAnalyzeResponse)
+def run_case_analysis(
+    case_id: uuid.UUID,
+    payload: CaseAnalyzeRequest,
+    request: Request,
+    db: DbSession,
+    user: CurrentUser,
+    _auth: WriteUser,
+) -> CaseAnalyzeResponse:
+    return IntegrationService(db).run_case_analysis(
+        case_id,
+        payload,
+        user_id=user.id,
+        ip_address=get_client_ip(request),
+    )
+
+
+@router.get("/{case_id}/report")
+def get_case_report(
+    case_id: uuid.UUID,
+    db: DbSession,
+    _user: CurrentUser,
+    _auth: ReadUser,
+) -> Response:
+    service = ReportService(db)
+    pdf_bytes = service.generate_case_report_pdf(case_id)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="case-{case_id}-report.pdf"'},
     )
 
 

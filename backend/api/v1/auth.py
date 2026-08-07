@@ -23,7 +23,7 @@ def get_me(user: CurrentUser) -> UserResponse:
 def login(payload: LoginRequest, request: Request, db: DbSession) -> TokenResponse:
     service = AuthService(db)
     access_token, refresh_token, expires_in = service.login(
-        username=payload.username,
+        email=payload.email,
         password=payload.password,
         ip_address=get_client_ip(request),
     )

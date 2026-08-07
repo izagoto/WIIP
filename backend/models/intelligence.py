@@ -11,7 +11,7 @@ from backend.models.base import Base, JSONType, UUIDPrimaryKeyMixin
 class Document(Base, UUIDPrimaryKeyMixin):
     __tablename__ = "documents"
 
-    case_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cases.id"), nullable=False)
+    case_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cases.id"), nullable=False, index=True)
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_type: Mapped[str] = mapped_column(String(20), nullable=False)
     file_url: Mapped[str] = mapped_column(String(500), nullable=False)

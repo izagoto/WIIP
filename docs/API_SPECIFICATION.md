@@ -64,7 +64,7 @@ Login dan dapatkan JWT token.
 
 ```json
 {
-  "username": "string",
+  "email": "string",
   "password": "string"
 }
 ```

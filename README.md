@@ -25,7 +25,23 @@ Spesifikasi lengkap modul mengacu pada dokumen sumber di [`docs/Solution_Pack_Di
 |---|---|---|
 | **Sprint 1** | Foundation — auth JWT, model database, migrasi, seed, health check | Selesai |
 | **Sprint 2** | Case platform API — kasus, tugas, Kanban, dashboard, RBAC | Selesai |
-| **Sprint 3** | Org hierarchy, audit logs API, evidence, laporan PDF | Direncanakan |
+| **Sprint 3** | Org hierarchy, audit logs, laporan PDF kasus, evidence repository | Selesai |
+| **Sprint 4** | Custody, transfer approval, SHA-256, vault, BAST, geospatial | Selesai |
+| **Sprint 5** | NER dokumen, analisis graf relasi, APK inspector, ML pipeline | Selesai |
+| **Sprint 6** | Dashboard intelijen, integrasi lintas modul, pengujian E2E | Selesai |
+
+### Ringkasan API per Sprint
+
+| Sprint | Endpoint utama |
+|---|---|
+| **1** | `POST /auth/login`, `GET /auth/me`, `POST /auth/refresh`, `POST /auth/logout`, `GET /health` |
+| **2** | `CRUD /cases`, `CRUD /tasks`, `PATCH /tasks/{id}/status`, `GET /dashboard/summary`, `CRUD /users` (admin) |
+| **3** | `CRUD /organization/hierarchy`, `GET /audit-logs`, `GET /cases/{id}/report` (PDF), `CRUD /evidence` |
+| **4** | `GET /evidence/{id}/custody`, `POST /evidence/{id}/transfer`, `PATCH /evidence/transfers/{id}/approve`, `GET\|POST /evidence/{id}/integrity`, `GET /evidence/vault`, `GET /evidence/{id}/custody-report` (BAST PDF), `GET /evidence/geospatial` |
+| **5** | `POST /intelligence/ner`, `POST /intelligence/graph`, `POST /intelligence/apk-analysis`, `GET /intelligence/dashboard` |
+| **6** | `GET /cases/{id}/integration`, `POST /cases/{id}/analyze`, dashboard intelijen lanjutan (cache TTL), alur E2E lintas modul |
+
+**Pengujian:** 45 integration tests (`pytest tests/`) — mencakup Sprint 1–6 termasuk alur E2E.
 
 API yang sudah tersedia dapat diuji melalui Swagger UI di [`/api/docs`](http://localhost:8000/api/docs). Riwayat perubahan terperinci ada di [`docs/CHANGELOG.md`](docs/CHANGELOG.md).
 
