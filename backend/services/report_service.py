@@ -79,9 +79,11 @@ class ReportService:
 
         writeln(f"Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}", size=9, gap=22)
         writeln(f"Case ID: {case.id}")
+        writeln(f"Reference number: {case.reference_number}")
         writeln(f"Title: {case.title}")
         writeln(f"Status: {case.status}")
         writeln(f"Priority: {case.priority}")
+        writeln(f"Registered at: {case.registered_at}")
         writeln(f"Assigned unit: {case.assigned_unit or '—'}")
         writeln(f"Assigned investigator: {assignee_name}")
         writeln(f"Created by: {creator_name}")
@@ -147,9 +149,19 @@ class ReportService:
             case_title = case.title if case else "—"
             y -= 8
             writeln(f"Evidence ID: {evidence.id}", size=12, gap=18)
+            writeln(f"Registration: {evidence.registration_number}", indent=60, size=10)
+            writeln(f"Received at: {evidence.received_at}", indent=60, size=10)
             writeln(f"Case: {case_title}", indent=60, size=10)
-            writeln(f"Type: {evidence.type} | Brand: {evidence.brand or '—'}", indent=60, size=10)
-            writeln(f"Serial: {evidence.serial_number or '—'} | IMEI: {evidence.imei or '—'}", indent=60, size=10)
+            writeln(
+                f"Item type: {evidence.type} | Category: {evidence.category} | Brand: {evidence.brand or '—'}",
+                indent=60,
+                size=10,
+            )
+            writeln(
+                f"Serial: {evidence.serial_number or '—'} | IMEI1: {evidence.imei_slot1 or '—'} | IMEI2: {evidence.imei_slot2 or '—'}",
+                indent=60,
+                size=10,
+            )
             writeln(f"Storage: {evidence.storage_location or '—'}", indent=60, size=10)
             writeln(f"SHA-256: {evidence.sha256_hash or 'not verified'}", indent=60, size=10, gap=14)
 

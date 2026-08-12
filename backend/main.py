@@ -13,6 +13,7 @@ from backend.core.config import get_settings
 from backend.core.database import engine
 from backend.core.exceptions import AppError, app_error_handler
 from backend.core.logger import setup_logging
+from backend.db.migrate import run_migrations
 from backend.db.seed import run_seed
 from backend.models.base import Base
 
@@ -22,6 +23,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     setup_logging()
     Base.metadata.create_all(bind=engine)
+    run_migrations(engine)
     if settings.seed_on_startup:
         run_seed()
     yield

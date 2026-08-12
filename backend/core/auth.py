@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import bcrypt
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 
 from backend.core.config import get_settings
 
@@ -66,11 +66,24 @@ def decode_token(token: str) -> dict[str, Any]:
     return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
 
 
+def normalize_bearer_token(token: str) -> str:
+    normalized = token.strip()
+    if normalized.lower().startswith("bearer "):
+        normalized = normalized[7:].strip()
+    return normalized
+
+
 def validate_access_token(token: str) -> dict[str, Any]:
+    token = normalize_bearer_token(token)
     try:
         payload = decode_token(token)
+    except ExpiredSignatureError as exc:
+        raise ValueError("Access token expired. Login again or call POST /auth/refresh.") from exc
     except JWTError as exc:
-        raise ValueError("Invalid access token") from exc
+        raise ValueError(
+            "Invalid access token. Use access_token from login (not refresh_token), "
+            "without a 'Bearer ' prefix in Swagger Authorize."
+        ) from exc
     if payload.get("type") != "access":
         raise ValueError("Invalid token type")
     return payload

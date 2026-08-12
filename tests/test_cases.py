@@ -1,3 +1,6 @@
+import re
+
+
 def test_create_and_get_case(client, auth_headers):
     create_response = client.post(
         "/api/v1/cases",
@@ -13,10 +16,42 @@ def test_create_and_get_case(client, auth_headers):
     case = create_response.json()
     assert case["title"] == "Kasus Uji Sprint 2"
     assert case["status"] == "open"
+    assert case["reference_number"].startswith("KUS-")
+    assert re.fullmatch(r"[A-Z]+-\d{6}-\d{4}", case["reference_number"])
+    assert case["registered_at"] is not None
+
+    me = client.get("/api/v1/auth/me", headers=auth_headers).json()
+    assert case["assigned_investigator"] == me["id"]
 
     get_response = client.get(f"/api/v1/cases/{case['id']}", headers=auth_headers)
     assert get_response.status_code == 200
     assert get_response.json()["priority"] == "high"
+
+
+def test_create_case_with_manual_reference_number(client, auth_headers):
+    create_response = client.post(
+        "/api/v1/cases",
+        headers=auth_headers,
+        json={
+            "title": "Dugaan Penipuan Online",
+            "reference_number": "KASUS-2026-001",
+            "priority": "high",
+        },
+    )
+    assert create_response.status_code == 201
+    assert create_response.json()["reference_number"] == "KASUS-2026-001"
+
+
+def test_create_case_duplicate_reference_number(client, auth_headers):
+    payload = {
+        "title": "Duplicate Reference Case",
+        "reference_number": "MANUAL-REF-001",
+        "priority": "medium",
+    }
+    first = client.post("/api/v1/cases", headers=auth_headers, json=payload)
+    second = client.post("/api/v1/cases", headers=auth_headers, json=payload)
+    assert first.status_code == 201
+    assert second.status_code == 409
 
 
 def test_list_cases_pagination(client, auth_headers):
@@ -67,6 +102,8 @@ def test_task_lifecycle_and_kanban(client, auth_headers):
     assert task_response.status_code == 201
     task_id = task_response.json()["id"]
     assert task_response.json()["status"] == "todo"
+    me = client.get("/api/v1/auth/me", headers=auth_headers).json()
+    assert task_response.json()["assignee"] == me["id"]
 
     move_response = client.patch(
         f"/api/v1/tasks/{task_id}/move",

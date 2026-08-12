@@ -1,3 +1,20 @@
+VALID_TEST_IMEI_SLOT1 = "490154203237518"
+VALID_TEST_IMEI_SLOT2 = "359123456789012"
+SMARTPHONE_TYPE = "Smartphone"
+
+
+def _evidence_payload(case_id: str, **extra) -> dict:
+    payload = {
+        "case_id": case_id,
+        "type": SMARTPHONE_TYPE,
+        "brand": "Samsung Galaxy A23 5G",
+        "imei_slot1": VALID_TEST_IMEI_SLOT1,
+        "serial_number": "SN-001",
+    }
+    payload.update(extra)
+    return payload
+
+
 def test_organization_hierarchy(client, admin_headers, auth_headers):
     root = client.post(
         "/api/v1/organization/hierarchy",
@@ -55,21 +72,21 @@ def test_evidence_crud(client, auth_headers):
     create_response = client.post(
         "/api/v1/evidence",
         headers=auth_headers,
-        json={
-            "case_id": case_id,
-            "type": "mobile",
-            "brand": "Samsung",
-            "imei": "123456789012345",
-            "serial_number": "SN-001",
-            "capacity": "128GB",
-            "condition_on_receipt": "Good",
-            "storage_location": "Vault A-01",
-        },
+        json=_evidence_payload(
+            case_id,
+            imei_slot2=VALID_TEST_IMEI_SLOT2,
+            capacity="128GB",
+            condition_on_receipt="Good",
+            storage_location="Vault A-01",
+        ),
     )
     assert create_response.status_code == 201
     evidence = create_response.json()
-    assert evidence["brand"] == "Samsung"
-    assert evidence["type"] == "mobile"
+    assert evidence["brand"] == "Samsung Galaxy A23 5G"
+    assert evidence["type"] == SMARTPHONE_TYPE
+    assert evidence["category"] == "mobile"
+    assert evidence["imei_slot1"] == VALID_TEST_IMEI_SLOT1
+    assert evidence["registration_number"].startswith("BB-")
 
     list_response = client.get(f"/api/v1/evidence?case_id={case_id}", headers=auth_headers)
     assert list_response.status_code == 200
@@ -87,6 +104,98 @@ def test_evidence_crud(client, auth_headers):
     assert update_response.json()["storage_location"] == "Vault B-02"
 
 
+def test_device_status_endpoint(client, auth_headers):
+    response = client.get("/api/v1/evidence/device-status", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert "is_cable_connected" in payload
+    assert "is_adb_connected" in payload
+
+
+def test_device_probe_endpoint(client, auth_headers):
+    response = client.get("/api/v1/evidence/device-probe", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert "adb_available" in payload
+    assert "message" in payload
+
+
+def test_smartphone_requires_fields(client, auth_headers):
+    case_id = client.post(
+        "/api/v1/cases",
+        headers=auth_headers,
+        json={"title": "Smartphone Validation Case", "priority": "medium"},
+    ).json()["id"]
+
+    missing_brand = client.post(
+        "/api/v1/evidence",
+        headers=auth_headers,
+        json=_evidence_payload(case_id, brand=None),
+    )
+    assert missing_brand.status_code == 422
+    assert missing_brand.json()["error"]["code"] == "invalid_brand"
+
+
+def test_invalid_imei_rejected(client, auth_headers):
+    case_id = client.post(
+        "/api/v1/cases",
+        headers=auth_headers,
+        json={"title": "IMEI Validation Case", "priority": "medium"},
+    ).json()["id"]
+
+    response = client.post(
+        "/api/v1/evidence",
+        headers=auth_headers,
+        json=_evidence_payload(case_id, imei_slot1="123456789012345"),
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "invalid_imei"
+
+
+def test_duplicate_imei_rejected(client, auth_headers):
+    case_id = client.post(
+        "/api/v1/cases",
+        headers=auth_headers,
+        json={"title": "Duplicate IMEI Case", "priority": "medium"},
+    ).json()["id"]
+    other_case_id = client.post(
+        "/api/v1/cases",
+        headers=auth_headers,
+        json={"title": "Other Case", "priority": "low"},
+    ).json()["id"]
+
+    first = client.post("/api/v1/evidence", headers=auth_headers, json=_evidence_payload(case_id))
+    assert first.status_code == 201
+
+    duplicate = client.post(
+        "/api/v1/evidence",
+        headers=auth_headers,
+        json=_evidence_payload(other_case_id, serial_number="SN-002"),
+    )
+    assert duplicate.status_code == 409
+
+
+def test_evidence_on_closed_case_rejected(client, auth_headers):
+    case_id = client.post(
+        "/api/v1/cases",
+        headers=auth_headers,
+        json={"title": "Closed Case Evidence", "priority": "medium"},
+    ).json()["id"]
+    client.patch(
+        f"/api/v1/cases/{case_id}/status",
+        headers=auth_headers,
+        json={"status": "closed"},
+    )
+
+    response = client.post(
+        "/api/v1/evidence",
+        headers=auth_headers,
+        json=_evidence_payload(case_id),
+    )
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "case_closed"
+
+
 def test_viewer_cannot_create_evidence(client, viewer_headers, auth_headers):
     case_id = client.post(
         "/api/v1/cases",
@@ -97,7 +206,7 @@ def test_viewer_cannot_create_evidence(client, viewer_headers, auth_headers):
     response = client.post(
         "/api/v1/evidence",
         headers=viewer_headers,
-        json={"case_id": case_id, "type": "document"},
+        json={"case_id": case_id, "type": "Dokumen"},
     )
     assert response.status_code == 403
 

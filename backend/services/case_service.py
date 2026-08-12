@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.core.exceptions import AppError, NotFoundError
+from backend.core.exceptions import AppError, ConflictError, NotFoundError
 from backend.models.audit_log import AuditLog
 from backend.models.case import Case, CasePriority, CaseStatus
 from backend.models.evidence import Evidence
@@ -12,6 +12,12 @@ from backend.models.task import Task, TaskStatus
 from backend.models.user import User
 from backend.models.whatsapp import WhatsAppData
 from backend.modules.d6_operations.audit import log_activity
+from backend.modules.d6_operations.case_guards import ensure_case_open
+from backend.modules.d6_operations.reference_number import (
+    format_reference_number,
+    wib_day_bounds_utc,
+    wib_now,
+)
 from backend.modules.d6_operations.kanban import (
     KANBAN_COLUMNS,
     api_status_to_db,
@@ -42,16 +48,19 @@ class CaseService:
         created_by: uuid.UUID,
         ip_address: str | None = None,
     ) -> Case:
-        if payload.assigned_investigator and not self._user_exists(payload.assigned_investigator):
-            raise AppError("invalid_assignee", "Assigned investigator not found", status_code=422)
+        reference_number = payload.reference_number or self._generate_reference_number(payload.title)
+        self._ensure_unique_reference_number(reference_number)
+        registered_at = payload.registered_at or datetime.now(UTC)
 
         case = Case(
             title=payload.title,
+            reference_number=reference_number,
             description=payload.description,
             priority=payload.priority,
             assigned_unit=payload.assigned_unit,
-            assigned_to=payload.assigned_investigator,
+            assigned_to=created_by,
             created_by=created_by,
+            registered_at=registered_at,
             status=CaseStatus.OPEN.value,
         )
         self.db.add(case)
@@ -62,7 +71,11 @@ class CaseService:
             action="case.create",
             entity_type="case",
             entity_id=case.id,
-            details={"title": case.title, "priority": case.priority},
+            details={
+                "title": case.title,
+                "reference_number": case.reference_number,
+                "priority": case.priority,
+            },
             ip_address=ip_address,
         )
         self.db.commit()
@@ -120,6 +133,11 @@ class CaseService:
             if assignee and not self._user_exists(assignee):
                 raise AppError("invalid_assignee", "Assigned investigator not found", status_code=422)
             case.assigned_to = assignee
+
+        if "reference_number" in updates:
+            reference_number = updates["reference_number"]
+            if reference_number != case.reference_number:
+                self._ensure_unique_reference_number(reference_number, exclude_case_id=case.id)
 
         for field, value in updates.items():
             setattr(case, field, value)
@@ -187,9 +205,11 @@ class CaseService:
 
         return CaseSummaryResponse(
             case_id=case.id,
+            reference_number=case.reference_number,
             title=case.title,
             status=case.status,
             priority=case.priority,
+            registered_at=case.registered_at,
             task_summary=task_summary,
             evidence_count=evidence_count,
             whatsapp_conversation_count=whatsapp_count,
@@ -239,15 +259,14 @@ class CaseService:
         user_id: uuid.UUID,
         ip_address: str | None = None,
     ) -> Task:
-        self.get_case(case_id)
-        if payload.assignee and not self._user_exists(payload.assignee):
-            raise AppError("invalid_assignee", "Assignee not found", status_code=422)
+        case = self.get_case(case_id)
+        ensure_case_open(case, action="create tasks")
 
         task = Task(
             case_id=case_id,
             title=payload.title,
             description=payload.description,
-            assignee_id=payload.assignee,
+            assignee_id=user_id,
             due_date=payload.due_date,
             urgency=payload.urgency,
             checklist=payload.checklist,
@@ -357,6 +376,30 @@ class CaseService:
 
     def _user_exists(self, user_id: uuid.UUID) -> bool:
         return self.db.get(User, user_id) is not None
+
+    def _generate_reference_number(self, title: str) -> str:
+        start_utc, end_utc = wib_day_bounds_utc()
+        today_count = (
+            self.db.scalar(
+                select(func.count())
+                .select_from(Case)
+                .where(Case.created_at >= start_utc, Case.created_at < end_utc)
+            )
+            or 0
+        )
+        return format_reference_number(title, wib_now(), today_count + 1)
+
+    def _ensure_unique_reference_number(
+        self,
+        reference_number: str,
+        *,
+        exclude_case_id: uuid.UUID | None = None,
+    ) -> None:
+        query = select(Case).where(Case.reference_number == reference_number)
+        if exclude_case_id is not None:
+            query = query.where(Case.id != exclude_case_id)
+        if self.db.scalar(query):
+            raise ConflictError("Case reference number already exists")
 
     def _recent_activities(
         self,

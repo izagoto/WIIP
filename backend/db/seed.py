@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from backend.core.auth import hash_password
 from backend.core.config import Settings, get_settings
 from backend.core.database import SessionLocal
-from backend.models.case import Case, CasePriority, CaseStatus
 from backend.models.user import User, UserRole
 
 logger = logging.getLogger(__name__)
@@ -21,9 +20,8 @@ def run_seed(db: Session | None = None, settings: Settings | None = None) -> Non
     owns_session = db is None
     session = db or SessionLocal()
     try:
-        admin = _seed_admin(session, app_settings)
-        investigator = _seed_investigator(session, app_settings)
-        _seed_sample_case(session, admin, investigator)
+        _seed_admin(session, app_settings)
+        _seed_investigator(session, app_settings)
         session.commit()
     except Exception:
         session.rollback()
@@ -101,26 +99,3 @@ def _parse_seed_credentials(
     if username and email and password:
         return username, email, password
     return None
-
-
-def _seed_sample_case(
-    session: Session,
-    admin: User | None,
-    investigator: User | None,
-) -> None:
-    sample_case = session.scalar(select(Case).where(Case.title == "Sample Investigation Case"))
-    if sample_case is not None or investigator is None:
-        return
-
-    session.add(
-        Case(
-            title="Sample Investigation Case",
-            description="Seed case for development and integration testing.",
-            priority=CasePriority.MEDIUM.value,
-            status=CaseStatus.OPEN.value,
-            assigned_unit="Cyber Unit",
-            assigned_to=investigator.id,
-            created_by=admin.id if admin else investigator.id,
-        )
-    )
-    logger.info("Created sample case.")

@@ -73,8 +73,9 @@ def _create_evidence(client, headers, case_id: str):
         headers=headers,
         json={
             "case_id": case_id,
-            "type": "mobile",
-            "brand": "Samsung",
+            "type": "Smartphone",
+            "brand": "Samsung Galaxy A23 5G",
+            "imei_slot1": "490154203237518",
             "serial_number": "SN-E2E-001",
             "storage_location": "Vault E2E-01",
             "location_latitude": "-6.200000",
@@ -104,7 +105,6 @@ def test_case_integration_overview(client, auth_headers, db_session):
 
 
 def test_end_to_end_investigation_workflow(client, auth_headers, db_session, tmp_path):
-    """WhatsApp → Case → Evidence → Intelligence → Reports."""
     case_id = _create_case(client, auth_headers)
     seed_whatsapp_case(db_session, uuid.UUID(case_id))
     evidence = _create_evidence(client, auth_headers, case_id)

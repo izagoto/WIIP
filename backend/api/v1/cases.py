@@ -34,11 +34,13 @@ def _case_response(case: Case) -> CaseResponse:
     return CaseResponse(
         id=case.id,
         title=case.title,
+        reference_number=case.reference_number,
         description=case.description,
         priority=case.priority,
         status=case.status,
         assigned_unit=case.assigned_unit,
         assigned_investigator=case.assigned_to,
+        registered_at=case.registered_at,
         created_at=case.created_at,
         updated_at=case.updated_at,
     )

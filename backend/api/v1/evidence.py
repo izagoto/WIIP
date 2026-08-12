@@ -9,6 +9,8 @@ from backend.modules.d6_operations.rbac import READ_ROLES, WRITE_ROLES
 from backend.schemas.common import PaginatedResponse
 from backend.schemas.evidence import (
     CustodyHistoryResponse,
+    DeviceProbeResponse,
+    DeviceStatusResponse,
     EvidenceCreateRequest,
     EvidenceResponse,
     EvidenceUpdateRequest,
@@ -31,6 +33,24 @@ WriteUser = Annotated[object, Depends(require_roles(*WRITE_ROLES))]
 
 def _evidence_response(evidence) -> EvidenceResponse:
     return EvidenceResponse.model_validate(evidence)
+
+
+@router.get("/device-status", response_model=DeviceStatusResponse)
+def get_device_status(
+    _user: CurrentUser,
+    _auth: ReadUser,
+    db: DbSession,
+) -> DeviceStatusResponse:
+    return EvidenceService(db).get_device_status()
+
+
+@router.get("/device-probe", response_model=DeviceProbeResponse)
+def probe_connected_device(
+    _user: CurrentUser,
+    _auth: WriteUser,
+    db: DbSession,
+) -> DeviceProbeResponse:
+    return EvidenceService(db).probe_device()
 
 
 @router.get("/vault", response_model=VaultResponse)

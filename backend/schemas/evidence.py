@@ -3,18 +3,31 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-EvidenceType = Literal["device", "mobile", "document", "media"]
 CustodyAction = Literal["received", "transferred"]
 TransferStatus = Literal["pending", "approved", "rejected"]
 
 
 class EvidenceCreateRequest(BaseModel):
     case_id: uuid.UUID
-    type: EvidenceType
-    brand: str | None = Field(default=None, max_length=100)
-    imei: str | None = Field(default=None, max_length=25)
+    registration_number: str | None = Field(
+        default=None,
+        max_length=50,
+        description="Optional. Auto-generated if omitted (e.g. BB-100826-0001).",
+    )
+    received_at: datetime | None = Field(
+        default=None,
+        description="Tanggal dan waktu barang bukti diterima. Defaults to now if omitted.",
+    )
+    type: str = Field(
+        min_length=1,
+        max_length=50,
+        description="Jenis barang bukti, e.g. Smartphone, Laptop, Dokumen.",
+    )
+    brand: str | None = Field(default=None, max_length=255)
+    imei_slot1: str | None = Field(default=None, max_length=25)
+    imei_slot2: str | None = Field(default=None, max_length=25)
     serial_number: str | None = Field(default=None, max_length=100)
     capacity: str | None = Field(default=None, max_length=50)
     condition_on_receipt: str | None = None
@@ -22,12 +35,39 @@ class EvidenceCreateRequest(BaseModel):
     location_latitude: Decimal | None = None
     location_longitude: Decimal | None = None
     storage_location: str | None = Field(default=None, max_length=255)
+
+    @field_validator("registration_number", mode="before")
+    @classmethod
+    def normalize_registration_number(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        if not normalized:
+            return None
+        if len(normalized) < 3:
+            raise ValueError("Registration number must be at least 3 characters")
+        return normalized
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def normalize_type(cls, value: str) -> str:
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Evidence type is required")
+        return normalized
 
 
 class EvidenceUpdateRequest(BaseModel):
-    type: EvidenceType | None = None
-    brand: str | None = Field(default=None, max_length=100)
-    imei: str | None = Field(default=None, max_length=25)
+    registration_number: str | None = Field(default=None, max_length=50)
+    received_at: datetime | None = None
+    type: str | None = Field(default=None, min_length=1, max_length=50)
+    brand: str | None = Field(default=None, max_length=255)
+    imei_slot1: str | None = Field(default=None, max_length=25)
+    imei_slot2: str | None = Field(default=None, max_length=25)
     serial_number: str | None = Field(default=None, max_length=100)
     capacity: str | None = Field(default=None, max_length=50)
     condition_on_receipt: str | None = None
@@ -35,6 +75,32 @@ class EvidenceUpdateRequest(BaseModel):
     location_latitude: Decimal | None = None
     location_longitude: Decimal | None = None
     storage_location: str | None = Field(default=None, max_length=255)
+
+    @field_validator("registration_number", mode="before")
+    @classmethod
+    def normalize_registration_number(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        if not normalized:
+            return None
+        if len(normalized) < 3:
+            raise ValueError("Registration number must be at least 3 characters")
+        return normalized
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def normalize_type(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Evidence type cannot be empty")
+        return normalized
 
 
 class EvidenceResponse(BaseModel):
@@ -42,9 +108,13 @@ class EvidenceResponse(BaseModel):
 
     id: uuid.UUID
     case_id: uuid.UUID
+    registration_number: str
+    received_at: datetime
     type: str
+    category: str
     brand: str | None
-    imei: str | None
+    imei_slot1: str | None
+    imei_slot2: str | None
     serial_number: str | None
     capacity: str | None
     condition_on_receipt: str | None
@@ -55,6 +125,29 @@ class EvidenceResponse(BaseModel):
     sha256_hash: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class DeviceStatusResponse(BaseModel):
+    is_cable_connected: bool
+    is_adb_connected: bool
+    serial_number: str | None = None
+    message: str | None = None
+
+
+class DeviceProbeResponse(BaseModel):
+    is_cable_connected: bool
+    is_adb_connected: bool
+    adb_available: bool = True
+    serial_number: str | None = None
+    type: str | None = None
+    brand: str | None = None
+    imei_slot1: str | None = None
+    imei_slot2: str | None = None
+    model: str | None = None
+    android_version: str | None = None
+    security_patch: str | None = None
+    device_id: str | None = None
+    message: str | None = None
 
 
 class CustodyHistoryEntry(BaseModel):

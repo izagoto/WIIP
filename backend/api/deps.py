@@ -32,7 +32,7 @@ def get_current_user(
     if credentials is None:
         raise UnauthorizedError("Missing authentication token")
     try:
-        payload = validate_access_token(credentials.credentials)
+        payload = validate_access_token(credentials.credentials.strip())
     except ValueError as exc:
         raise UnauthorizedError(str(exc)) from exc
 

@@ -7,14 +7,17 @@ def _create_case(client, headers, title: str = "Sprint 4 Case"):
 
 
 def _create_evidence(client, headers, case_id: str, **extra):
+    evidence_type = extra.get("type", "Smartphone")
     payload = {
         "case_id": case_id,
-        "type": "mobile",
-        "brand": "Samsung",
-        "serial_number": "SN-S4-001",
+        "type": evidence_type,
         "storage_location": "Vault A-01",
         **extra,
     }
+    if evidence_type == "Smartphone":
+        payload.setdefault("brand", "Samsung Galaxy A23 5G")
+        payload.setdefault("imei_slot1", "490154203237518")
+        payload.setdefault("serial_number", "SN-S4-001")
     response = client.post("/api/v1/evidence", headers=headers, json=payload)
     assert response.status_code == 201
     return response.json()
@@ -144,9 +147,17 @@ def test_integrity_verification(client, auth_headers):
 
 def test_vault_registry(client, auth_headers):
     case_id = _create_case(client, auth_headers)
-    _create_evidence(client, auth_headers, case_id, storage_location="Vault A-01", type="mobile")
-    _create_evidence(client, auth_headers, case_id, storage_location="Vault A-01", type="document", serial_number="SN-DOC-1")
-    _create_evidence(client, auth_headers, case_id, storage_location="Vault B-02", type="mobile", serial_number="SN-MOB-2")
+    _create_evidence(client, auth_headers, case_id, storage_location="Vault A-01", type="Smartphone")
+    _create_evidence(client, auth_headers, case_id, storage_location="Vault A-01", type="Dokumen", serial_number="SN-DOC-1")
+    _create_evidence(
+        client,
+        auth_headers,
+        case_id,
+        storage_location="Vault B-02",
+        type="Smartphone",
+        serial_number="SN-MOB-2",
+        imei_slot1="359123456789012",
+    )
 
     response = client.get("/api/v1/evidence/vault", headers=auth_headers)
     assert response.status_code == 200

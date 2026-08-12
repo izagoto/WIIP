@@ -69,6 +69,7 @@ class Settings(BaseSettings):
 
     storage_path: str = Field(default="./data/uploads", validation_alias="STORAGE_PATH")
     max_upload_size_mb: int = Field(default=100, validation_alias="MAX_UPLOAD_SIZE_MB")
+    adb_path: str = Field(default="adb", validation_alias="ADB_PATH")
 
     @property
     def cors_origins(self) -> list[str]:
@@ -82,6 +83,10 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def get_adb_path() -> str:
+    return get_settings().adb_path
 
 
 def get_project_root() -> Path:
